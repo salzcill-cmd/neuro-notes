@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Star,
   MoreHorizontal,
-  Clock,
   Tag,
   Trash2,
   Copy,
@@ -29,13 +28,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NoteEditor } from "@/components/editor/NoteEditor";
 import { useNoteStore, useAppStore, useUIStore } from "@/stores";
-import { cn, formatDate, formatDateTime, calculateReadingTime } from "@/lib/utils";
+import { cn, formatDate, formatDateTime, calculateReadingTime, generateId } from "@/lib/utils";
 
 export function NoteEditorView() {
   const currentNote = useNoteStore((s) => s.currentNote);
   const updateNote = useNoteStore((s) => s.updateNote);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
   const toggleFavorite = useNoteStore((s) => s.toggleFavorite);
+  const toggleArchive = useNoteStore((s) => s.toggleArchive);
   const moveToTrash = useNoteStore((s) => s.moveToTrash);
   const rightPanelOpen = useUIStore((s) => s.rightPanelOpen);
   const setRightPanelOpen = useUIStore((s) => s.setRightPanelOpen);
@@ -82,6 +82,7 @@ export function NoteEditorView() {
             <input
               value={title}
               onChange={handleTitleChange}
+              aria-label="Note title"
               className="w-full bg-transparent text-lg font-semibold outline-none placeholder:text-muted-foreground"
               placeholder="Untitled"
             />
@@ -104,7 +105,10 @@ export function NoteEditorView() {
             </Tooltip>
 
             <Tooltip content="Share">
-              <Button variant="ghost" size="icon-sm">
+              <Button variant="ghost" size="icon-sm" onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                showToast("Link copied to clipboard", "success");
+              }}>
                 <Share2 className="h-4 w-4" />
               </Button>
             </Tooltip>
@@ -125,11 +129,28 @@ export function NoteEditorView() {
               >
                 Copy Link
               </DropdownMenuItem>
-              <DropdownMenuItem icon={<Copy className="h-4 w-4" />}>
+              <DropdownMenuItem icon={<Copy className="h-4 w-4" />} onClick={() => {
+                const now = new Date().toISOString();
+                const duplicate = {
+                  ...currentNote,
+                  id: generateId(),
+                  title: `${currentNote.title} (Copy)`,
+                  content: currentNote.content,
+                  plainText: currentNote.plainText,
+                  createdAt: now,
+                  updatedAt: now,
+                };
+                useNoteStore.getState().addNote(duplicate);
+                showToast("Note duplicated", "success");
+              }}>
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem icon={<Archive className="h-4 w-4" />}>
-                Archive
+              <DropdownMenuItem icon={<Archive className="h-4 w-4" />} onClick={() => {
+                toggleArchive(currentNote.id);
+                setCurrentNoteId(null);
+                showToast(currentNote.isArchived ? "Note unarchived" : "Note archived", "success");
+              }}>
+                {currentNote.isArchived ? "Unarchive" : "Archive"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

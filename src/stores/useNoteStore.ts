@@ -172,26 +172,29 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     return filtered;
   },
 
-  togglePin: (id) =>
-    set((state) => ({
-      notes: state.notes.map((n) =>
-        n.id === id ? { ...n, isPinned: !n.isPinned } : n
-      ),
-    })),
+  togglePin: (id) => {
+    const notes = get().notes.map((n) =>
+      n.id === id ? { ...n, isPinned: !n.isPinned } : n
+    );
+    saveNotes(notes);
+    set({ notes });
+  },
 
-  toggleFavorite: (id) =>
-    set((state) => ({
-      notes: state.notes.map((n) =>
-        n.id === id ? { ...n, isFavorite: !n.isFavorite } : n
-      ),
-    })),
+  toggleFavorite: (id) => {
+    const notes = get().notes.map((n) =>
+      n.id === id ? { ...n, isFavorite: !n.isFavorite } : n
+    );
+    saveNotes(notes);
+    set({ notes });
+  },
 
-  toggleArchive: (id) =>
-    set((state) => ({
-      notes: state.notes.map((n) =>
-        n.id === id ? { ...n, isArchived: !n.isArchived } : n
-      ),
-    })),
+  toggleArchive: (id) => {
+    const notes = get().notes.map((n) =>
+      n.id === id ? { ...n, isArchived: !n.isArchived } : n
+    );
+    saveNotes(notes);
+    set({ notes });
+  },
 
   moveToTrash: (id) => {
     const notes = get().notes.map((n) =>

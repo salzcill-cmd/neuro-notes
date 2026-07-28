@@ -15,8 +15,6 @@ import {
   Trash2,
   Archive,
   Tag,
-  MoreHorizontal,
-  CheckSquare,
   Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,11 +37,25 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
   const toggleFavorite = useNoteStore((s) => s.toggleFavorite);
   const moveToTrash = useNoteStore((s) => s.moveToTrash);
+  const restoreFromTrash = useNoteStore((s) => s.restoreFromTrash);
+  const deleteNote = useNoteStore((s) => s.deleteNote);
   const tags = useTagStore((s) => s.tags);
+  const isTrash = note.isDeleted === true;
 
   const handleClick = () => {
+    if (isTrash) return;
     setCurrentNote(note);
     setCurrentNoteId(note.id);
+  };
+
+  const handleRestore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    restoreFromTrash(note.id);
+  };
+
+  const handlePermanentDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteNote(note.id);
   };
 
   if (view === "list") {
@@ -84,6 +96,13 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
             </Badge>
           ))}
           <span className="text-xs text-muted-foreground">{formatDate(note.updatedAt)}</span>
+          {isTrash && (
+            <div className="flex items-center gap-1 ml-2">
+              <button onClick={handleRestore} className="text-xs text-primary hover:underline">Restore</button>
+              <span className="text-muted-foreground">·</span>
+              <button onClick={handlePermanentDelete} className="text-xs text-destructive hover:underline">Delete</button>
+            </div>
+          )}
         </div>
       </motion.button>
     );
@@ -153,7 +172,14 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
             </Badge>
           ))}
         </div>
-        <span className="text-[10px] text-muted-foreground">{calculateReadingTime(note.plainText || "")} min read</span>
+        {isTrash ? (
+          <div className="flex items-center gap-2">
+            <button onClick={handleRestore} className="text-[10px] text-primary hover:underline">Restore</button>
+            <button onClick={handlePermanentDelete} className="text-[10px] text-destructive hover:underline">Delete</button>
+          </div>
+        ) : (
+          <span className="text-[10px] text-muted-foreground">{calculateReadingTime(note.plainText || "")} min read</span>
+        )}
       </div>
     </motion.div>
   );

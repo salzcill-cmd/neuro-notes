@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useAppStore, useNoteStore, useUIStore } from "@/stores";
 import { cn } from "@/lib/utils";
+import { generateId } from "@/lib/utils";
+import type { Note } from "@/types";
 
 export function Topbar() {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
@@ -24,9 +26,37 @@ export function Topbar() {
   const setCommandPaletteOpen = useAppStore((s) => s.setCommandPaletteOpen);
   const settings = useAppStore((s) => s.settings);
   const setSettings = useAppStore((s) => s.setSettings);
+  const activeView = useAppStore((s) => s.activeView);
+  const setActiveView = useAppStore((s) => s.setActiveView);
   const rightPanelOpen = useUIStore((s) => s.rightPanelOpen);
   const setRightPanelOpen = useUIStore((s) => s.setRightPanelOpen);
-  const currentNote = useNoteStore((s) => s.currentNote);
+  const addNote = useNoteStore((s) => s.addNote);
+  const setCurrentNote = useNoteStore((s) => s.setCurrentNote);
+  const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
+
+  const handleNewNote = () => {
+    const now = new Date().toISOString();
+    const note: Note = {
+      id: generateId(),
+      title: "Untitled",
+      content: "",
+      plainText: "",
+      folderId: null,
+      workspaceId: "default",
+      isPinned: false,
+      isFavorite: false,
+      isArchived: false,
+      isDeleted: false,
+      tags: [],
+      backlinks: [],
+      links: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    addNote(note);
+    setCurrentNote(note);
+    setCurrentNoteId(note.id);
+  };
 
   const toggleTheme = () => {
     const next = settings.theme === "dark" ? "light" : "dark";
@@ -63,15 +93,14 @@ export function Topbar() {
 
       <div className="flex items-center gap-0.5">
         <Tooltip content="New Note" shortcut="Ctrl+N">
-          <Button variant="ghost" size="icon-sm">
+          <Button variant="ghost" size="icon-sm" onClick={handleNewNote} aria-label="New Note">
             <Plus className="h-4 w-4" />
           </Button>
         </Tooltip>
 
         <Tooltip content="Notifications">
-          <Button variant="ghost" size="icon-sm" className="relative">
+          <Button variant="ghost" size="icon-sm" className="relative" aria-label="Notifications">
             <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
           </Button>
         </Tooltip>
 
@@ -100,7 +129,7 @@ export function Topbar() {
         </Tooltip>
 
         <Tooltip content="Settings">
-          <Button variant="ghost" size="icon-sm">
+          <Button variant="ghost" size="icon-sm" onClick={() => setActiveView("settings")} aria-label="Settings">
             <Settings className="h-4 w-4" />
           </Button>
         </Tooltip>

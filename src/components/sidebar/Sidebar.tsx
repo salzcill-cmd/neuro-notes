@@ -22,11 +22,6 @@ import {
   Trash2,
   Settings,
   FileCode,
-  BookOpen,
-  Zap,
-  MoreHorizontal,
-  GripVertical,
-  X,
   PanelLeftClose,
   Sparkles,
   StickyNote,
@@ -60,6 +55,7 @@ function SidebarSection({ title, children, defaultOpen = true }: SidebarSectionP
     <div className="mb-1">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="flex w-full items-center gap-1 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronRight
@@ -249,6 +245,8 @@ export function Sidebar() {
   const notes = useNoteStore((s) => s.notes);
   const setCurrentNote = useNoteStore((s) => s.setCurrentNote);
   const addNote = useNoteStore((s) => s.addNote);
+  const filterTag = useNoteStore((s) => s.filterTag);
+  const setFilterTag = useNoteStore((s) => s.setFilterTag);
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
@@ -442,6 +440,12 @@ export function Sidebar() {
                       key={tag.id}
                       icon={<Hash className="h-4 w-4" />}
                       label={tag.name}
+                      onClick={() => {
+                        setFilterTag(filterTag === tag.name ? null : tag.name);
+                        if (filterTag !== tag.name) {
+                          setActiveView("notes");
+                        }
+                      }}
                       badge={
                         tag.color ? (
                           <span

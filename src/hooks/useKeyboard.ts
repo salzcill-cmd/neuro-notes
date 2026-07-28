@@ -47,24 +47,31 @@ export function useKeyCombo(
   action: () => void,
   options?: { ctrl?: boolean; meta?: boolean; shift?: boolean }
 ) {
+  const keysRef = useRef(keys);
+  const actionRef = useRef(action);
+  const optionsRef = useRef(options);
+  keysRef.current = keys;
+  actionRef.current = action;
+  optionsRef.current = options;
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const allPressed = keys.every(
+      const allPressed = keysRef.current.every(
         (key) => e.key.toLowerCase() === key.toLowerCase()
       );
-      const ctrlMatch = options?.ctrl ? e.ctrlKey : true;
-      const metaMatch = options?.meta ? e.metaKey : true;
-      const shiftMatch = options?.shift ? e.shiftKey : true;
+      const ctrlMatch = optionsRef.current?.ctrl ? e.ctrlKey : true;
+      const metaMatch = optionsRef.current?.meta ? e.metaKey : true;
+      const shiftMatch = optionsRef.current?.shift ? e.shiftKey : true;
 
       if (allPressed && ctrlMatch && metaMatch && shiftMatch) {
         e.preventDefault();
-        action();
+        actionRef.current();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [keys, action, options]);
+  }, []);
 }
 
 export function useHotkey(

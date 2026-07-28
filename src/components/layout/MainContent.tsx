@@ -17,7 +17,8 @@ export function MainContent() {
   const activeView = useAppStore((s) => s.activeView);
   const currentNoteId = useAppStore((s) => s.currentNoteId);
 
-  if (currentNoteId && activeView !== "settings" && activeView !== "dashboard" && activeView !== "graph" && activeView !== "tasks" && activeView !== "ai" && activeView !== "canvas" && activeView !== "database" && activeView !== "templates") {
+  const editorViews = ["notes", "favorites", "recent", "daily", "trash", "archive"];
+  if (currentNoteId && editorViews.includes(activeView)) {
     return <NoteEditorView />;
   }
 

@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/sidebar/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ToastContainer } from "@/components/ui/toast";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { useAppStore } from "@/stores";
 import { useMediaQuery } from "@/hooks";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [setCommandPaletteOpen]);
 
   return (
+    <ThemeProvider>
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       {!zenMode && !focusMode && (
         <>
@@ -66,6 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <ToastContainer />
     </div>
+    </ThemeProvider>
   );
 }
 

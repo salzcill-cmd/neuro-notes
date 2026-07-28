@@ -215,6 +215,9 @@ export function SettingsView() {
                         description="Minimize animations"
                       >
                         <button
+                          role="switch"
+                          aria-checked={settings.reducedMotion}
+                          aria-label="Reduced Motion"
                           onClick={() => setSettings({ reducedMotion: !settings.reducedMotion })}
                           className={cn(
                             "relative h-6 w-11 rounded-full transition-colors",
@@ -238,6 +241,9 @@ export function SettingsView() {
                     <SettingsSection title="Editor Settings">
                       <SettingRow label="Auto Save" description="Automatically save changes">
                         <button
+                          role="switch"
+                          aria-checked={settings.autoSave}
+                          aria-label="Auto Save"
                           onClick={() => setSettings({ autoSave: !settings.autoSave })}
                           className={cn(
                             "relative h-6 w-11 rounded-full transition-colors",
@@ -254,6 +260,9 @@ export function SettingsView() {
                       </SettingRow>
                       <SettingRow label="Spell Check" description="Enable browser spell check">
                         <button
+                          role="switch"
+                          aria-checked={settings.spellCheck}
+                          aria-label="Spell Check"
                           onClick={() => setSettings({ spellCheck: !settings.spellCheck })}
                           className={cn(
                             "relative h-6 w-11 rounded-full transition-colors",
@@ -270,6 +279,9 @@ export function SettingsView() {
                       </SettingRow>
                       <SettingRow label="Show Line Numbers" description="Display line numbers in editor">
                         <button
+                          role="switch"
+                          aria-checked={settings.showLineNumber}
+                          aria-label="Show Line Numbers"
                           onClick={() => setSettings({ showLineNumber: !settings.showLineNumber })}
                           className={cn(
                             "relative h-6 w-11 rounded-full transition-colors",
@@ -286,6 +298,9 @@ export function SettingsView() {
                       </SettingRow>
                       <SettingRow label="Markdown Shortcuts" description="Use markdown shortcuts in editor">
                         <button
+                          role="switch"
+                          aria-checked={settings.markdownShortcuts}
+                          aria-label="Markdown Shortcuts"
                           onClick={() => setSettings({ markdownShortcuts: !settings.markdownShortcuts })}
                           className={cn(
                             "relative h-6 w-11 rounded-full transition-colors",

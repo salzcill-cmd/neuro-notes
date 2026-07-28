@@ -24,12 +24,6 @@ import {
   Hash,
   Command,
   ArrowRight,
-  Type,
-  Download,
-  Upload,
-  Keyboard,
-  Palette,
-  Zap,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppStore, useNoteStore, useWorkspaceStore, useUIStore } from "@/stores";
@@ -364,7 +358,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               onClick={cmd.action}
                               onMouseEnter={() => setSelectedIndex(globalIndex)}
                               className={cn(
-                                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                                "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                                 globalIndex === selectedIndex
                                   ? "bg-accent text-accent-foreground"
                                   : "text-foreground hover:bg-accent/50"

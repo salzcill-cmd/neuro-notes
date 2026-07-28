@@ -59,6 +59,7 @@ function ToolbarButton({
         size="icon-sm"
         onClick={onClick}
         disabled={disabled}
+        aria-pressed={active}
         className={cn(
           "h-7 w-7 p-0",
           active && "bg-accent text-accent-foreground"

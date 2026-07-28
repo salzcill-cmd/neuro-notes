@@ -19,7 +19,6 @@ import {
   Bot,
   User,
   Trash2,
-  Download,
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -6,21 +6,12 @@ import {
   Plus,
   StickyNote,
   Type,
-  Image,
-  Link2,
-  FileText,
   Trash2,
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Undo2,
-  Redo2,
   MousePointer2,
   Hand,
-  Grid3x3,
-  Save,
-  Download,
-  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -330,6 +321,7 @@ export function CanvasView() {
               <textarea
                 value={card.content}
                 onChange={(e) => handleCardUpdate(card.id, e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="w-full h-full bg-transparent resize-none outline-none p-3 text-sm text-foreground/80 placeholder:text-foreground/30"
                 placeholder="Type something..."
               />
@@ -337,6 +329,7 @@ export function CanvasView() {
               {/* Card Actions */}
               <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
                 <button
+                  aria-label="Delete card"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteCard(card.id);
@@ -353,6 +346,7 @@ export function CanvasView() {
                   {cardColors.map((color) => (
                     <button
                       key={color.value}
+                      aria-label={`Set color to ${color.name}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setCards((prev) =>

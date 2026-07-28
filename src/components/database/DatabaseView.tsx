@@ -6,20 +6,12 @@ import {
   Plus,
   Table,
   LayoutGrid,
-  Calendar,
   List,
-  BarChart3,
   Filter,
   ArrowUpDown,
-  MoreHorizontal,
   Trash2,
-  Edit3,
-  Copy,
-  Download,
   Search,
-  Columns,
   GripVertical,
-  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -280,7 +272,7 @@ export function DatabaseView() {
               <motion.div
                 key={row.id}
                 layout
-                className="flex items-center gap-3 rounded-lg border border-border bg-card/30 p-3 hover:bg-accent/30 transition-colors"
+                className="flex items-center gap-3 rounded-lg border border-border bg-card/30 p-3 hover:bg-accent/30 transition-colors group"
               >
                 <div className="flex-1 min-w-0 grid grid-cols-5 gap-4">
                   {columns.map((col) => (

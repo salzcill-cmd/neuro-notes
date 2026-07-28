@@ -395,6 +395,7 @@ export function DashboardView() {
                 {["Summarize recent notes", "Suggest connections", "Daily review"].map((suggestion) => (
                   <button
                     key={suggestion}
+                    onClick={() => setActiveView("ai")}
                     className="flex w-full items-center gap-2 rounded-md p-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                   >
                     <Sparkles className="h-3 w-3" />
