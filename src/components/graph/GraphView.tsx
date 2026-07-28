@@ -200,22 +200,15 @@ export function GraphView() {
     []
   );
 
-  const graphNodesRef = React.useRef(graphNodes);
-  const graphEdgesRef = React.useRef(graphEdges);
-
+  const dataKey = `${activeNotes.length}-${activeNotes.map((n) => n.id).join(",")}-${filterType}`;
+  const prevKeyRef = React.useRef(dataKey);
   React.useEffect(() => {
-    if (graphNodesRef.current !== graphNodes) {
-      graphNodesRef.current = graphNodes;
+    if (prevKeyRef.current !== dataKey) {
+      prevKeyRef.current = dataKey;
       setNodes(graphNodes);
-    }
-  }, [graphNodes]);
-
-  React.useEffect(() => {
-    if (graphEdgesRef.current !== graphEdges) {
-      graphEdgesRef.current = graphEdges;
       setEdges(graphEdges);
     }
-  }, [graphEdges]);
+  });
 
   const onNodeClick = React.useCallback(
     (_: React.MouseEvent, node: Node) => {
