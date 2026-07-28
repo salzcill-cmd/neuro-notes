@@ -46,13 +46,7 @@ const defaultColumns: DatabaseColumn[] = [
   { id: "tags", name: "Tags", type: "text", width: 150 },
 ];
 
-const defaultRows: DatabaseRow[] = [
-  { id: generateId(), data: { title: "Project Planning", status: "Active", priority: "High", date: "2024-01-15", tags: "project, planning" } },
-  { id: generateId(), data: { title: "Research Notes", status: "Active", priority: "Medium", date: "2024-01-14", tags: "research" } },
-  { id: generateId(), data: { title: "Meeting Notes", status: "Completed", priority: "Low", date: "2024-01-13", tags: "meeting" } },
-  { id: generateId(), data: { title: "Documentation", status: "In Progress", priority: "High", date: "2024-01-12", tags: "docs, writing" } },
-  { id: generateId(), data: { title: "Bug Tracker", status: "Active", priority: "Urgent", date: "2024-01-11", tags: "bugs" } },
-];
+const defaultRows: DatabaseRow[] = [];
 
 function CellEditor({ column, value, onChange }: { column: DatabaseColumn; value: unknown; onChange: (v: unknown) => void }) {
   if (column.type === "select") {

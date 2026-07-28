@@ -12,6 +12,8 @@ import { AIAssistantView } from "@/components/ai/AIAssistantView";
 import { CanvasView } from "@/components/canvas/CanvasView";
 import { DatabaseView } from "@/components/database/DatabaseView";
 import { TemplatesView } from "@/components/notes/TemplatesView";
+import { CalendarView } from "@/components/calendar/CalendarView";
+import { SearchView } from "@/components/search/SearchView";
 
 export function MainContent() {
   const activeView = useAppStore((s) => s.activeView);
@@ -30,6 +32,8 @@ export function MainContent() {
     case "recent":
     case "daily":
     case "trash":
+      return <NotesView />;
+    case "archive":
       return <NotesView />;
     case "graph":
       return <GraphView />;
@@ -52,32 +56,4 @@ export function MainContent() {
     default:
       return <DashboardView />;
   }
-}
-
-function CalendarView() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <div className="text-center">
-        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">📅</span>
-        </div>
-        <h3 className="text-lg font-semibold mb-1">Calendar</h3>
-        <p className="text-sm text-muted-foreground">Coming soon</p>
-      </div>
-    </div>
-  );
-}
-
-function SearchView() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <div className="text-center">
-        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">🔍</span>
-        </div>
-        <h3 className="text-lg font-semibold mb-1">Advanced Search</h3>
-        <p className="text-sm text-muted-foreground">Use Ctrl+K for quick search</p>
-      </div>
-    </div>
-  );
 }

@@ -142,6 +142,15 @@ export function DashboardView() {
   const totalWords = activeNotes.reduce((acc, n) => acc + (n.plainText?.split(/\s+/).length || 0), 0);
   const totalBacklinks = activeNotes.reduce((acc, n) => acc + n.backlinks.length, 0);
 
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const notesThisWeek = activeNotes.filter((n) => new Date(n.createdAt) > weekAgo).length;
+  const wordsThisWeek = activeNotes
+    .filter((n) => new Date(n.updatedAt) > weekAgo)
+    .reduce((acc, n) => acc + (n.plainText?.split(/\s+/).length || 0), 0);
+  const weeklyGoal = 10;
+  const weeklyProgress = Math.min(notesThisWeek, weeklyGoal);
+
   return (
     <ScrollArea className="h-full">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -189,14 +198,14 @@ export function DashboardView() {
             icon={<FileText className="h-5 w-5 text-primary" />}
             label="Total Notes"
             value={activeNotes.length}
-            change="+12% this week"
+            change={notesThisWeek > 0 ? `+${notesThisWeek} this week` : undefined}
             color="bg-primary/10"
           />
           <StatCard
             icon={<PenTool className="h-5 w-5 text-blue-500" />}
             label="Words Written"
             value={totalWords.toLocaleString()}
-            change="+2.4k this week"
+            change={wordsThisWeek > 0 ? `+${wordsThisWeek.toLocaleString()} this week` : undefined}
             color="bg-blue-500/10"
           />
           <StatCard
@@ -210,7 +219,7 @@ export function DashboardView() {
             icon={<GitFork className="h-5 w-5 text-purple-500" />}
             label="Connections"
             value={totalBacklinks}
-            change="Knowledge links"
+            change={totalBacklinks > 0 ? "Knowledge links" : "No links yet"}
             color="bg-purple-500/10"
           />
         </div>
@@ -428,10 +437,13 @@ export function DashboardView() {
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Weekly Goal</span>
-                  <span className="font-medium">5/10 notes</span>
+                  <span className="font-medium">{weeklyProgress}/{weeklyGoal} notes</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: "50%" }} />
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${(weeklyProgress / weeklyGoal) * 100}%` }}
+                  />
                 </div>
               </div>
             </div>
