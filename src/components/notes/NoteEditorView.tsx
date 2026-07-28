@@ -235,12 +235,44 @@ export function NoteEditorView() {
                     <span className="text-xs text-muted-foreground">No tags</span>
                   ) : (
                     currentNote.tags.map((tag) => (
-                      <Badge key={tag.id} variant="secondary" className="text-xs">
+                      <Badge key={tag.id} variant="secondary" className="text-xs gap-1">
                         {tag.name}
+                        <button
+                          onClick={() => {
+                            const newTags = currentNote.tags.filter((t) => t.id !== tag.id);
+                            updateNote(currentNote.id, { tags: newTags });
+                          }}
+                          className="ml-0.5 hover:text-destructive"
+                          aria-label={`Remove tag ${tag.name}`}
+                        >
+                          ×
+                        </button>
                       </Badge>
                     ))
                   )}
                 </div>
+                <input
+                  type="text"
+                  placeholder="Add tag..."
+                  aria-label="Add tag"
+                  className="mt-2 w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-primary"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                      const tagName = e.currentTarget.value.trim().toLowerCase();
+                      if (!currentNote.tags.some((t) => t.name === tagName)) {
+                        const newTag = {
+                          id: generateId(),
+                          name: tagName,
+                          parentId: null,
+                          workspaceId: currentNote.workspaceId,
+                          createdAt: new Date().toISOString(),
+                        };
+                        updateNote(currentNote.id, { tags: [...currentNote.tags, newTag] });
+                      }
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                />
               </div>
 
               <div>

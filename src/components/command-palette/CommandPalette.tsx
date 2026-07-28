@@ -24,6 +24,7 @@ import {
   Hash,
   Command,
   ArrowRight,
+  Archive,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppStore, useNoteStore, useWorkspaceStore, useUIStore } from "@/stores";
@@ -191,6 +192,23 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         icon: <FileCode className="h-4 w-4" />,
         category: "Navigation",
         action: () => { setActiveView("templates"); onOpenChange(false); },
+      },
+      {
+        id: "search",
+        label: "Search",
+        description: "Full-text search with filters",
+        icon: <Search className="h-4 w-4" />,
+        category: "Navigation",
+        shortcut: "Ctrl+Shift+F",
+        action: () => { setActiveView("search"); onOpenChange(false); },
+      },
+      {
+        id: "archive",
+        label: "Archive",
+        description: "View archived notes",
+        icon: <Archive className="h-4 w-4" />,
+        category: "Navigation",
+        action: () => { setActiveView("archive"); onOpenChange(false); },
       },
       {
         id: "ai-assistant",

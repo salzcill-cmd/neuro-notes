@@ -7,8 +7,11 @@ import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ToastContainer } from "@/components/ui/toast";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { useAppStore } from "@/stores";
+import { useNoteStore } from "@/stores";
+import { useTaskStore } from "@/stores";
+import { useUIStore } from "@/stores";
 import { useMediaQuery } from "@/hooks";
-import { cn } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -28,6 +31,42 @@ export function AppLayout({ children }: AppLayoutProps) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setCommandPaletteOpen(!useAppStore.getState().commandPaletteOpen);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "n" && !e.shiftKey) {
+        e.preventDefault();
+        const now = new Date().toISOString();
+        const note = {
+          id: generateId(),
+          title: "Untitled",
+          content: "",
+          plainText: "",
+          folderId: null,
+          workspaceId: "default",
+          isPinned: false,
+          isFavorite: false,
+          isArchived: false,
+          isDeleted: false,
+          tags: [],
+          backlinks: [],
+          links: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+        useNoteStore.getState().addNote(note);
+        useNoteStore.getState().setCurrentNote(note);
+        useAppStore.getState().setCurrentNoteId(note.id);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        useAppStore.getState().setActiveView("search");
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        useAppStore.getState().setActiveView("tasks");
+        setTimeout(() => {
+          const input = document.querySelector<HTMLInputElement>('[placeholder="Add a new task..."]');
+          if (input) input.focus();
+        }, 100);
       }
     };
     window.addEventListener("keydown", handler);

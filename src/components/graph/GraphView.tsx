@@ -21,6 +21,7 @@ import {
   Minimize2,
   Filter,
   Info,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,8 +69,21 @@ export function GraphView() {
 
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [filterType, setFilterType] = React.useState<string | null>(null);
+  const [showFilterMenu, setShowFilterMenu] = React.useState(false);
 
   const activeNotes = notes.filter((n) => !n.isDeleted && !n.isArchived);
+
+  const allTags = React.useMemo(() => {
+    const tagMap = new Map<string, number>();
+    activeNotes.forEach((n) => {
+      n.tags.forEach((t) => {
+        tagMap.set(t.name, (tagMap.get(t.name) || 0) + 1);
+      });
+    });
+    return Array.from(tagMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [activeNotes]);
 
   const graphNodes: Node[] = React.useMemo(() => {
     const nodes: Node[] = [];
@@ -244,7 +258,7 @@ export function GraphView() {
             <Button
               variant={filterType ? "secondary" : "ghost"}
               size="icon-sm"
-              onClick={() => setFilterType(null)}
+              onClick={() => setShowFilterMenu(!showFilterMenu)}
             >
               <Filter className="h-3.5 w-3.5" />
             </Button>
@@ -261,8 +275,48 @@ export function GraphView() {
         </motion.div>
       </div>
 
-      {/* Tag Filter */}
-      {filterType && (
+      {/* Tag Filter Dropdown */}
+      {showFilterMenu && (
+        <div className="absolute top-16 right-4 z-10 w-56 rounded-xl border border-border bg-background shadow-xl p-2">
+          <div className="flex items-center justify-between px-2 py-1 mb-1">
+            <span className="text-xs font-semibold text-muted-foreground">Filter by Tag</span>
+            <button onClick={() => setShowFilterMenu(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          {filterType && (
+            <button
+              onClick={() => { setFilterType(null); setShowFilterMenu(false); }}
+              className="w-full text-left px-2 py-1.5 rounded-md text-xs text-primary hover:bg-accent/50 transition-colors"
+            >
+              Clear filter
+            </button>
+          )}
+          <div className="max-h-48 overflow-y-auto space-y-px">
+            {allTags.map((tag) => (
+              <button
+                key={tag.name}
+                onClick={() => { setFilterType(tag.name); setShowFilterMenu(false); }}
+                className={cn(
+                  "w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-colors",
+                  filterType === tag.name
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "hover:bg-accent/50 text-foreground"
+                )}
+              >
+                <span className="truncate">#{tag.name}</span>
+                <span className="text-muted-foreground tabular-nums">{tag.count}</span>
+              </button>
+            ))}
+            {allTags.length === 0 && (
+              <p className="px-2 py-2 text-xs text-muted-foreground text-center">No tags found</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Active Filter Badge */}
+      {filterType && !showFilterMenu && (
         <div className="absolute top-16 right-4 z-10">
           <Badge variant="info" className="text-xs">
             Filtered: {filterType}
