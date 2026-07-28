@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useNoteStore, useAppStore, useUIStore } from "@/stores";
 import { cn, generateId } from "@/lib/utils";
+import type { Note } from "@/types";
 
 interface Message {
   id: string;
@@ -45,7 +46,7 @@ const suggestions = [
   { icon: <FileText className="h-4 w-4" />, label: "Improve writing", description: "Enhance clarity and style" },
 ];
 
-function generateContextualResponse(input: string, notes: ReturnType<typeof useNoteStore.getState>["notes"]): string {
+function generateContextualResponse(input: string, notes: Note[]): string {
   const lower = input.toLowerCase();
   const activeNotes = notes.filter((n) => !n.isDeleted && !n.isArchived);
 
