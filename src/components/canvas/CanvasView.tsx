@@ -43,39 +43,24 @@ const cardColors = [
   { name: "White", value: "#ffffff" },
 ];
 
+const loadCanvasCards = (): CanvasCard[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem("neuronotes-canvas");
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return [];
+};
+
+const saveCanvasCards = (cards: CanvasCard[]) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("neuronotes-canvas", JSON.stringify(cards));
+  } catch {}
+};
+
 export function CanvasView() {
-  const [cards, setCards] = React.useState<CanvasCard[]>([
-    {
-      id: generateId(),
-      x: 100,
-      y: 100,
-      width: 220,
-      height: 160,
-      content: "Welcome to Canvas!\n\nDouble-click anywhere to add a new card.",
-      color: "#bfdbfe",
-      type: "card",
-    },
-    {
-      id: generateId(),
-      x: 400,
-      y: 150,
-      width: 200,
-      height: 140,
-      content: "Ideas go here",
-      color: "#fef08a",
-      type: "card",
-    },
-    {
-      id: generateId(),
-      x: 250,
-      y: 380,
-      width: 200,
-      height: 140,
-      content: "Research notes",
-      color: "#bbf7d0",
-      type: "card",
-    },
-  ]);
+  const [cards, setCards] = React.useState<CanvasCard[]>(loadCanvasCards);
 
   const [selectedCard, setSelectedCard] = React.useState<string | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -86,6 +71,10 @@ export function CanvasView() {
   const [panStart, setPanStart] = React.useState({ x: 0, y: 0 });
   const [activeTool, setActiveTool] = React.useState<"select" | "pan">("select");
   const canvasRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    saveCanvasCards(cards);
+  }, [cards]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (activeTool === "pan") return;

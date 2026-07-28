@@ -16,11 +16,11 @@ import {
   Sun,
   Contrast,
   Check,
+  RefreshCw,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useAppStore } from "@/stores";
-import { useNoteStore } from "@/stores";
+import { useAppStore, useNoteStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import type { Theme } from "@/types";
 
@@ -90,10 +90,116 @@ function SettingRow({
   );
 }
 
+function Toggle({
+  checked,
+  onToggle,
+  label,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onToggle}
+      className={cn(
+        "relative h-6 w-11 rounded-full transition-colors",
+        checked ? "bg-primary" : "bg-muted"
+      )}
+    >
+      <span
+        className={cn(
+          "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+          checked ? "left-[22px]" : "left-0.5"
+        )}
+      />
+    </button>
+  );
+}
+
+function useToggle(initial = false) {
+  const [value, setValue] = React.useState(initial);
+  const toggle = React.useCallback(() => setValue((v) => !v), []);
+  return [value, toggle] as const;
+}
+
 export function SettingsView() {
   const settings = useAppStore((s) => s.settings);
   const setSettings = useAppStore((s) => s.setSettings);
   const [activeSection, setActiveSection] = React.useState("appearance");
+
+  // Notification settings (persisted to localStorage)
+  const [emailNotifs, toggleEmailNotifs] = useToggle(
+    typeof window !== "undefined" ? localStorage.getItem("nn-email-notifs") === "true" : false
+  );
+  const [desktopNotifs, toggleDesktopNotifs] = useToggle(
+    typeof window !== "undefined" ? localStorage.getItem("nn-desktop-notifs") === "true" : false
+  );
+  const [taskReminders, toggleTaskReminders] = useToggle(
+    typeof window !== "undefined" ? localStorage.getItem("nn-task-reminders") === "true" : false
+  );
+  const [dailyDigest, toggleDailyDigest] = useToggle(
+    typeof window !== "undefined" ? localStorage.getItem("nn-daily-digest") === "true" : false
+  );
+
+  // Security settings
+  const [twoFactor, toggleTwoFactor] = useToggle(false);
+  const [biometric, toggleBiometric] = useToggle(false);
+  const [autoLock, setAutoLock] = React.useState("15");
+  const [encryption, toggleEncryption] = useToggle(false);
+
+  // Storage settings
+  const [offlineStorage, toggleOfflineStorage] = useToggle(true);
+  const [autoBackup, toggleAutoBackup] = useToggle(false);
+
+  // Plugins
+  const [plugins, setPlugins] = React.useState<Record<string, boolean>>({
+    markdown: true,
+    latex: false,
+    mermaid: false,
+    webclipper: false,
+    aiwriting: false,
+  });
+
+  // API settings
+  const [webhookUrl, setWebhookUrl] = React.useState("");
+  const [rateLimit, setRateLimit] = React.useState("60");
+  const [debugMode, toggleDebugMode] = useToggle(false);
+
+  // Persist notification settings
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nn-email-notifs", String(emailNotifs));
+      localStorage.setItem("nn-desktop-notifs", String(desktopNotifs));
+      localStorage.setItem("nn-task-reminders", String(taskReminders));
+      localStorage.setItem("nn-daily-digest", String(dailyDigest));
+    }
+  }, [emailNotifs, desktopNotifs, taskReminders, dailyDigest]);
+
+  const togglePlugin = (key: string) => {
+    setPlugins((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleExport = () => {
+    const notes = useNoteStore.getState().notes;
+    const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "neuronotes-export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleClearData = () => {
+    if (confirm("Are you sure? This will delete ALL your notes and cannot be undone.")) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
 
   return (
     <ScrollArea className="h-full">
@@ -211,27 +317,8 @@ export function SettingsView() {
                     <Separator />
 
                     <SettingsSection title="Accessibility">
-                      <SettingRow
-                        label="Reduced Motion"
-                        description="Minimize animations"
-                      >
-                        <button
-                          role="switch"
-                          aria-checked={settings.reducedMotion}
-                          aria-label="Reduced Motion"
-                          onClick={() => setSettings({ reducedMotion: !settings.reducedMotion })}
-                          className={cn(
-                            "relative h-6 w-11 rounded-full transition-colors",
-                            settings.reducedMotion ? "bg-primary" : "bg-muted"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                              settings.reducedMotion ? "left-[22px]" : "left-0.5"
-                            )}
-                          />
-                        </button>
+                      <SettingRow label="Reduced Motion" description="Minimize animations">
+                        <Toggle checked={settings.reducedMotion} onToggle={() => setSettings({ reducedMotion: !settings.reducedMotion })} label="Reduced Motion" />
                       </SettingRow>
                     </SettingsSection>
                   </>
@@ -241,80 +328,16 @@ export function SettingsView() {
                   <>
                     <SettingsSection title="Editor Settings">
                       <SettingRow label="Auto Save" description="Automatically save changes">
-                        <button
-                          role="switch"
-                          aria-checked={settings.autoSave}
-                          aria-label="Auto Save"
-                          onClick={() => setSettings({ autoSave: !settings.autoSave })}
-                          className={cn(
-                            "relative h-6 w-11 rounded-full transition-colors",
-                            settings.autoSave ? "bg-primary" : "bg-muted"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                              settings.autoSave ? "left-[22px]" : "left-0.5"
-                            )}
-                          />
-                        </button>
+                        <Toggle checked={settings.autoSave} onToggle={() => setSettings({ autoSave: !settings.autoSave })} label="Auto Save" />
                       </SettingRow>
                       <SettingRow label="Spell Check" description="Enable browser spell check">
-                        <button
-                          role="switch"
-                          aria-checked={settings.spellCheck}
-                          aria-label="Spell Check"
-                          onClick={() => setSettings({ spellCheck: !settings.spellCheck })}
-                          className={cn(
-                            "relative h-6 w-11 rounded-full transition-colors",
-                            settings.spellCheck ? "bg-primary" : "bg-muted"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                              settings.spellCheck ? "left-[22px]" : "left-0.5"
-                            )}
-                          />
-                        </button>
+                        <Toggle checked={settings.spellCheck} onToggle={() => setSettings({ spellCheck: !settings.spellCheck })} label="Spell Check" />
                       </SettingRow>
                       <SettingRow label="Show Line Numbers" description="Display line numbers in editor">
-                        <button
-                          role="switch"
-                          aria-checked={settings.showLineNumber}
-                          aria-label="Show Line Numbers"
-                          onClick={() => setSettings({ showLineNumber: !settings.showLineNumber })}
-                          className={cn(
-                            "relative h-6 w-11 rounded-full transition-colors",
-                            settings.showLineNumber ? "bg-primary" : "bg-muted"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                              settings.showLineNumber ? "left-[22px]" : "left-0.5"
-                            )}
-                          />
-                        </button>
+                        <Toggle checked={settings.showLineNumber} onToggle={() => setSettings({ showLineNumber: !settings.showLineNumber })} label="Show Line Numbers" />
                       </SettingRow>
                       <SettingRow label="Markdown Shortcuts" description="Use markdown shortcuts in editor">
-                        <button
-                          role="switch"
-                          aria-checked={settings.markdownShortcuts}
-                          aria-label="Markdown Shortcuts"
-                          onClick={() => setSettings({ markdownShortcuts: !settings.markdownShortcuts })}
-                          className={cn(
-                            "relative h-6 w-11 rounded-full transition-colors",
-                            settings.markdownShortcuts ? "bg-primary" : "bg-muted"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                              settings.markdownShortcuts ? "left-[22px]" : "left-0.5"
-                            )}
-                          />
-                        </button>
+                        <Toggle checked={settings.markdownShortcuts} onToggle={() => setSettings({ markdownShortcuts: !settings.markdownShortcuts })} label="Markdown Shortcuts" />
                       </SettingRow>
                     </SettingsSection>
                   </>
@@ -345,269 +368,160 @@ export function SettingsView() {
                 )}
 
                 {activeSection === "notifications" && (
-                  <>
-                    <SettingsSection title="Notifications">
-                      <SettingRow label="Email Notifications" description="Receive email alerts for tasks">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Email Notifications"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Desktop Notifications" description="Browser push notifications">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Desktop Notifications"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Task Reminders" description="Remind you of upcoming due dates">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Task Reminders"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Daily Digest" description="Summary of your daily activity">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Daily Digest"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                    </SettingsSection>
-                  </>
+                  <SettingsSection title="Notifications">
+                    <SettingRow label="Email Notifications" description="Receive email alerts for tasks">
+                      <Toggle checked={emailNotifs} onToggle={toggleEmailNotifs} label="Email Notifications" />
+                    </SettingRow>
+                    <SettingRow label="Desktop Notifications" description="Browser push notifications">
+                      <Toggle checked={desktopNotifs} onToggle={toggleDesktopNotifs} label="Desktop Notifications" />
+                    </SettingRow>
+                    <SettingRow label="Task Reminders" description="Remind you of upcoming due dates">
+                      <Toggle checked={taskReminders} onToggle={toggleTaskReminders} label="Task Reminders" />
+                    </SettingRow>
+                    <SettingRow label="Daily Digest" description="Summary of your daily activity">
+                      <Toggle checked={dailyDigest} onToggle={toggleDailyDigest} label="Daily Digest" />
+                    </SettingRow>
+                  </SettingsSection>
                 )}
 
                 {activeSection === "security" && (
-                  <>
-                    <SettingsSection title="Security">
-                      <SettingRow label="Two-Factor Authentication" description="Extra layer of account security">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Two-Factor Authentication"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
+                  <SettingsSection title="Security">
+                    <SettingRow label="Two-Factor Authentication" description="Extra layer of account security">
+                      <Toggle checked={twoFactor} onToggle={toggleTwoFactor} label="Two-Factor Authentication" />
+                    </SettingRow>
+                    <SettingRow label="Biometric Lock" description="Require fingerprint or face to open app">
+                      <Toggle checked={biometric} onToggle={toggleBiometric} label="Biometric Lock" />
+                    </SettingRow>
+                    <SettingRow label="Auto-Lock" description="Lock app after inactivity">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={autoLock}
+                          onChange={(e) => setAutoLock(e.target.value)}
+                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
                         >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Biometric Lock" description="Require fingerprint or face to open app">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Biometric Lock"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Auto-Lock" description="Lock app after inactivity">
-                        <div className="flex items-center gap-2">
-                          <select className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-                            <option value="5">5 minutes</option>
-                            <option value="15">15 minutes</option>
-                            <option value="30">30 minutes</option>
-                            <option value="60">1 hour</option>
-                            <option value="never">Never</option>
-                          </select>
-                        </div>
-                      </SettingRow>
-                      <SettingRow label="Encryption" description="Encrypt local data at rest">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Encryption"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                    </SettingsSection>
-                  </>
+                          <option value="5">5 minutes</option>
+                          <option value="15">15 minutes</option>
+                          <option value="30">30 minutes</option>
+                          <option value="60">1 hour</option>
+                          <option value="never">Never</option>
+                        </select>
+                      </div>
+                    </SettingRow>
+                    <SettingRow label="Encryption" description="Encrypt local data at rest">
+                      <Toggle checked={encryption} onToggle={toggleEncryption} label="Encryption" />
+                    </SettingRow>
+                  </SettingsSection>
                 )}
 
                 {activeSection === "storage" && (
-                  <>
-                    <SettingsSection title="Storage">
-                      <SettingRow label="Local Storage Used" description={`${((typeof window !== 'undefined' ? localStorage.length * 1024 : 0) / 1024 / 1024).toFixed(2)} MB of 50 MB`}>
-                        <div className="w-32">
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full bg-primary" style={{ width: "12%" }} />
-                          </div>
+                  <SettingsSection title="Storage">
+                    <SettingRow label="Local Storage Used" description={`${((typeof window !== 'undefined' ? localStorage.length * 1024 : 0) / 1024 / 1024).toFixed(2)} MB of 50 MB`}>
+                      <div className="w-32">
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full bg-primary" style={{ width: "12%" }} />
                         </div>
-                      </SettingRow>
-                      <SettingRow label="Offline Storage" description="Cache notes for offline access">
-                        <button
-                          role="switch"
-                          aria-checked={true}
-                          aria-label="Offline Storage"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-primary"
-                        >
-                          <span className="absolute top-0.5 left-[22px] h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Auto Backup" description="Backup data daily to cloud">
-                        <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Auto Backup"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
-                        >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Export Data" description="Download all notes as JSON">
-                        <button
-                          onClick={() => {
-                            const notes = useNoteStore.getState().notes;
-                            const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = "neuronotes-export.json";
-                            a.click();
-                            URL.revokeObjectURL(url);
-                          }}
-                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent"
-                        >
-                          Export
-                        </button>
-                      </SettingRow>
-                      <SettingRow label="Clear All Data" description="Delete all notes and settings (irreversible)">
-                        <button
-                          onClick={() => {
-                            if (confirm("Are you sure? This will delete ALL your notes and cannot be undone.")) {
-                              localStorage.clear();
-                              window.location.reload();
-                            }
-                          }}
-                          className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/20"
-                        >
-                          Clear Data
-                        </button>
-                      </SettingRow>
-                    </SettingsSection>
-                  </>
+                      </div>
+                    </SettingRow>
+                    <SettingRow label="Offline Storage" description="Cache notes for offline access">
+                      <Toggle checked={offlineStorage} onToggle={toggleOfflineStorage} label="Offline Storage" />
+                    </SettingRow>
+                    <SettingRow label="Auto Backup" description="Backup data daily to cloud">
+                      <Toggle checked={autoBackup} onToggle={toggleAutoBackup} label="Auto Backup" />
+                    </SettingRow>
+                    <SettingRow label="Export Data" description="Download all notes as JSON">
+                      <button
+                        onClick={handleExport}
+                        className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent"
+                      >
+                        Export
+                      </button>
+                    </SettingRow>
+                    <SettingRow label="Clear All Data" description="Delete all notes and settings (irreversible)">
+                      <button
+                        onClick={handleClearData}
+                        className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/20"
+                      >
+                        Clear Data
+                      </button>
+                    </SettingRow>
+                  </SettingsSection>
                 )}
 
                 {activeSection === "plugins" && (
-                  <>
-                    <SettingsSection title="Plugins">
-                      <div className="space-y-3">
-                        {[
-                          { name: "Markdown Export", description: "Export notes to .md files", enabled: true },
-                          { name: "LaTeX Math", description: "Render math equations with KaTeX", enabled: false },
-                          { name: "Mermaid Diagrams", description: "Create flowcharts and diagrams", enabled: false },
-                          { name: "Web Clipper", description: "Save web pages as notes", enabled: false },
-                          { name: "AI Writing Assistant", description: "AI-powered writing suggestions", enabled: false },
-                        ].map((plugin) => (
-                          <div key={plugin.name} className="flex items-center justify-between rounded-lg border border-border p-4">
-                            <div className="flex-1 min-w-0 pr-4">
-                              <p className="text-sm font-medium">{plugin.name}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{plugin.description}</p>
-                            </div>
-                            <button
-                              role="switch"
-                              aria-checked={plugin.enabled}
-                              aria-label={plugin.name}
-                              onClick={() => {}}
-                              className={cn(
-                                "relative h-6 w-11 rounded-full transition-colors",
-                                plugin.enabled ? "bg-primary" : "bg-muted"
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                                  plugin.enabled ? "left-[22px]" : "left-0.5"
-                                )}
-                              />
-                            </button>
+                  <SettingsSection title="Plugins">
+                    <div className="space-y-3">
+                      {[
+                        { key: "markdown", name: "Markdown Export", description: "Export notes to .md files" },
+                        { key: "latex", name: "LaTeX Math", description: "Render math equations with KaTeX" },
+                        { key: "mermaid", name: "Mermaid Diagrams", description: "Create flowcharts and diagrams" },
+                        { key: "webclipper", name: "Web Clipper", description: "Save web pages as notes" },
+                        { key: "aiwriting", name: "AI Writing Assistant", description: "AI-powered writing suggestions" },
+                      ].map((plugin) => (
+                        <div key={plugin.key} className="flex items-center justify-between rounded-lg border border-border p-4">
+                          <div className="flex-1 min-w-0 pr-4">
+                            <p className="text-sm font-medium">{plugin.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{plugin.description}</p>
                           </div>
-                        ))}
-                      </div>
-                    </SettingsSection>
-                  </>
+                          <Toggle
+                            checked={plugins[plugin.key]}
+                            onToggle={() => togglePlugin(plugin.key)}
+                            label={plugin.name}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </SettingsSection>
                 )}
 
                 {activeSection === "api" && (
-                  <>
-                    <SettingsSection title="API & Developer">
-                      <SettingRow label="API Key" description="Your personal API key for integrations">
-                        <div className="flex items-center gap-2">
-                          <code className="rounded border border-border bg-muted px-2 py-1 text-xs font-mono select-all">
-                            nnote_sk_••••••••••••••••
-                          </code>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText("nnote_sk_demo_key_placeholder");
-                            }}
-                            className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent"
-                          >
-                            Copy
-                          </button>
-                          <button
-                            onClick={() => {}}
-                            className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent text-red-500"
-                          >
-                            Regenerate
-                          </button>
-                        </div>
-                      </SettingRow>
-                      <SettingRow label="Webhook URL" description="Endpoint for real-time events">
-                        <input
-                          type="url"
-                          placeholder="https://your-app.com/webhook"
-                          className="w-64 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-                        />
-                      </SettingRow>
-                      <SettingRow label="Rate Limiting" description="API requests per minute">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            defaultValue={60}
-                            min={10}
-                            max={1000}
-                            className="w-20 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-center"
-                          />
-                          <span className="text-xs text-muted-foreground">req/min</span>
-                        </div>
-                      </SettingRow>
-                      <SettingRow label="Debug Mode" description="Enable verbose logging for development">
+                  <SettingsSection title="API & Developer">
+                    <SettingRow label="API Key" description="Your personal API key for integrations">
+                      <div className="flex items-center gap-2">
+                        <code className="rounded border border-border bg-muted px-2 py-1 text-xs font-mono select-all">
+                          nnote_sk_••••••••••••••••
+                        </code>
                         <button
-                          role="switch"
-                          aria-checked={false}
-                          aria-label="Debug Mode"
-                          onClick={() => {}}
-                          className="relative h-6 w-11 rounded-full transition-colors bg-muted"
+                          onClick={() => {
+                            navigator.clipboard.writeText("nnote_sk_demo_key_placeholder");
+                          }}
+                          className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent"
                         >
-                          <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
+                          Copy
                         </button>
-                      </SettingRow>
-                    </SettingsSection>
-                  </>
+                        <button
+                          onClick={() => {}}
+                          className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent text-muted-foreground"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </SettingRow>
+                    <SettingRow label="Webhook URL" description="Endpoint for real-time events">
+                      <input
+                        type="url"
+                        value={webhookUrl}
+                        onChange={(e) => setWebhookUrl(e.target.value)}
+                        placeholder="https://your-app.com/webhook"
+                        className="w-64 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                      />
+                    </SettingRow>
+                    <SettingRow label="Rate Limiting" description="API requests per minute">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={rateLimit}
+                          onChange={(e) => setRateLimit(e.target.value)}
+                          min={10}
+                          max={1000}
+                          className="w-20 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-center"
+                        />
+                        <span className="text-xs text-muted-foreground">req/min</span>
+                      </div>
+                    </SettingRow>
+                    <SettingRow label="Debug Mode" description="Enable verbose logging for development">
+                      <Toggle checked={debugMode} onToggle={toggleDebugMode} label="Debug Mode" />
+                    </SettingRow>
+                  </SettingsSection>
                 )}
               </div>
             </div>

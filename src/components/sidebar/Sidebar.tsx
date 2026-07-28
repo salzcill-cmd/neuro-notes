@@ -25,6 +25,7 @@ import {
   PanelLeftClose,
   Sparkles,
   StickyNote,
+  Archive,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -266,6 +267,7 @@ export function Sidebar() {
   const favoriteNotes = activeNotes.filter((n) => n.isFavorite);
   const rootFolders = folders.filter((f) => f.parentId === null);
   const pendingTasks = tasks.filter((t) => t.status !== "done" && !t.subtasks.length);
+  const archivedNotes = notes.filter((n) => n.isArchived && !n.isDeleted);
 
   const handleNewNote = () => {
     const now = new Date().toISOString();
@@ -320,6 +322,7 @@ export function Sidebar() {
     { id: "database", icon: <Database className="h-4 w-4" />, label: "Database" },
     { id: "templates", icon: <FileCode className="h-4 w-4" />, label: "Templates" },
     { id: "ai", icon: <Sparkles className="h-4 w-4" />, label: "AI Assistant" },
+    { id: "archive", icon: <Archive className="h-4 w-4" />, label: "Archive", count: archivedNotes.length > 0 ? archivedNotes.length : undefined },
   ];
 
   return (
