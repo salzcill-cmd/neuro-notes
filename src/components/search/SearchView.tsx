@@ -116,7 +116,7 @@ export function SearchView() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search notes by title or content..."
-              className="w-full h-14 pl-12 pr-12 rounded-xl border border-border bg-card/50 text-lg outline-none focus:ring-2 focus:ring-primary/50 transition-shadow placeholder:text-muted-foreground"
+              className="w-full h-12 pl-12 pr-12 rounded-lg border border-border bg-card text-base outline-none focus:ring-2 focus:ring-primary/40 transition-shadow placeholder:text-muted-foreground"
             />
             {query && (
               <button
@@ -136,7 +136,7 @@ export function SearchView() {
           transition={{ delay: 0.1 }}
           className="flex flex-wrap items-center gap-3"
         >
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card/50 p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             {(["all", "favorites", "recent", "archived"] as FilterOption[]).map((f) => (
               <button
                 key={f}
@@ -155,7 +155,7 @@ export function SearchView() {
 
           <Separator orientation="vertical" className="h-5" />
 
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card/50 p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             {(["relevance", "date", "title"] as SortOption[]).map((s) => (
               <button
                 key={s}
@@ -237,7 +237,7 @@ export function SearchView() {
                   setCurrentNote(note);
                   setCurrentNoteId(note.id);
                 }}
-                className="flex w-full items-start gap-4 rounded-xl border border-border bg-card/30 p-4 hover:bg-accent/30 hover:border-border/80 transition-all text-left group"
+                className="flex w-full items-start gap-4 rounded-md border border-border bg-card p-3 hover:bg-accent/50 hover:border-border/80 transition-all text-left group"
               >
                 {note.color && note.color !== "transparent" ? (
                   <span

@@ -16,7 +16,6 @@ import {
   PenTool,
   Database,
   FileCode,
-  Sparkles,
   Clock,
   Star,
   Trash2,
@@ -29,6 +28,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppStore, useNoteStore, useWorkspaceStore, useUIStore } from "@/stores";
 import { cn, generateId } from "@/lib/utils";
+import { openDailyNote } from "@/lib/dailyNote";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -51,9 +51,28 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
 
+  // Reset state when the palette opens (render-phase adjustment, no effect).
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setQuery("");
+      setSelectedIndex(0);
+    }
+  }
+
+  // Reset the highlighted row whenever the query changes.
+  const [prevQuery, setPrevQuery] = React.useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setSelectedIndex(0);
+  }
+
   const setSettings = useAppStore((s) => s.setSettings);
   const settings = useAppStore((s) => s.settings);
+  const zenMode = useAppStore((s) => s.zenMode);
   const setActiveView = useAppStore((s) => s.setActiveView);
+  const setQuickSwitcherOpen = useAppStore((s) => s.setQuickSwitcherOpen);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
   const notes = useNoteStore((s) => s.notes);
   const addNote = useNoteStore((s) => s.addNote);
@@ -79,6 +98,31 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       }));
 
     return [
+      {
+        id: "quick-switcher",
+        label: "Quick Switcher",
+        description: "Jump to any note",
+        icon: <FileText className="h-4 w-4" />,
+        category: "Actions",
+        shortcut: "Ctrl+O",
+        action: () => {
+          onOpenChange(false);
+          setQuickSwitcherOpen(true);
+        },
+      },
+      {
+        id: "daily-note",
+        label: "Daily Note",
+        description: "Open or create today's daily note",
+        icon: <Clock className="h-4 w-4" />,
+        category: "Actions",
+        shortcut: "Ctrl+D",
+        action: () => {
+          openDailyNote();
+          setActiveView("notes");
+          onOpenChange(false);
+        },
+      },
       {
         id: "new-note",
         label: "New Note",
@@ -211,15 +255,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         action: () => { setActiveView("archive"); onOpenChange(false); },
       },
       {
-        id: "ai-assistant",
-        label: "AI Assistant",
-        description: "Open AI assistant",
-        icon: <Sparkles className="h-4 w-4" />,
-        category: "Navigation",
-        shortcut: "Ctrl+Shift+A",
-        action: () => { setActiveView("ai"); onOpenChange(false); },
-      },
-      {
         id: "trash",
         label: "Trash",
         description: "View deleted notes",
@@ -235,6 +270,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         category: "Navigation",
         shortcut: "Ctrl+,",
         action: () => { setActiveView("settings"); onOpenChange(false); },
+      },
+      {
+        id: "zen-mode",
+        label: zenMode ? "Exit Zen Mode" : "Zen Mode",
+        description: "Focus on your writing, hide everything else",
+        icon: <FolderOpen className="h-4 w-4" />,
+        category: "Appearance",
+        shortcut: "Ctrl+Shift+Z",
+        action: () => {
+          const app = useAppStore.getState();
+          app.setZenMode(!app.zenMode);
+          onOpenChange(false);
+        },
       },
       {
         id: "toggle-theme",
@@ -262,7 +310,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       },
       ...noteCommands,
     ];
-  }, [notes, settings, currentWorkspace, onOpenChange, setSettings, setActiveView, setCurrentNoteId, setCurrentNote, addNote]);
+  }, [notes, settings, zenMode, currentWorkspace, onOpenChange, setSettings, setActiveView, setQuickSwitcherOpen, setCurrentNoteId, setCurrentNote, addNote]);
 
   const filtered = React.useMemo(() => {
     if (!query.trim()) return commands;
@@ -286,15 +334,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   React.useEffect(() => {
     if (open) {
-      setQuery("");
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
   }, [open]);
-
-  React.useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
 
   React.useEffect(() => {
     if (!listRef.current) return;

@@ -11,35 +11,27 @@ import {
   SortDesc,
   FileText,
   Star,
-  Clock,
-  Trash2,
-  Archive,
   Tag,
-  Filter,
+  StickyNote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import { useNoteStore, useAppStore, useWorkspaceStore, useTagStore } from "@/stores";
+import { useNoteStore, useAppStore, useWorkspaceStore } from "@/stores";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { TagManager } from "@/components/settings/TagManager";
 import { cn, formatDate, generateId, calculateReadingTime } from "@/lib/utils";
+import { openDailyNote } from "@/lib/dailyNote";
 import type { Note } from "@/types";
 
 function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
   const setCurrentNote = useNoteStore((s) => s.setCurrentNote);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
   const toggleFavorite = useNoteStore((s) => s.toggleFavorite);
-  const moveToTrash = useNoteStore((s) => s.moveToTrash);
   const restoreFromTrash = useNoteStore((s) => s.restoreFromTrash);
   const deleteNote = useNoteStore((s) => s.deleteNote);
-  const tags = useTagStore((s) => s.tags);
   const isTrash = note.isDeleted === true;
 
   const handleClick = () => {
@@ -66,7 +58,7 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClick}
-        className="flex w-full items-center gap-3 rounded-lg border border-border bg-card/30 p-3 hover:bg-accent/30 hover:border-border/80 transition-all text-left group"
+        className="flex w-full items-center gap-3 rounded-md border border-border bg-card p-2.5 hover:bg-accent/50 hover:border-border/80 transition-all text-left group"
       >
         {note.color && note.color !== "transparent" ? (
           <span
@@ -124,7 +116,7 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
       role="button"
       tabIndex={0}
       className={cn(
-        "flex flex-col rounded-xl border border-border bg-card/30 p-4 hover:bg-accent/30 hover:border-border/80 transition-all text-left group cursor-pointer",
+        "flex flex-col rounded-md border border-border bg-card p-3 hover:bg-accent/50 hover:border-border/80 transition-all text-left group cursor-pointer",
         note.color && note.color !== "transparent" && "border-l-2",
       )}
       style={note.color && note.color !== "transparent" ? { borderLeftColor: note.color } : undefined}
@@ -196,6 +188,7 @@ export function NotesView() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
   const [sortOrder, setSortOrder] = React.useState<"desc" | "asc">("desc");
+  const [tagManagerOpen, setTagManagerOpen] = React.useState(false);
 
   const filteredNotes = React.useMemo(() => {
     let result = notes.filter((n) => {
@@ -259,19 +252,27 @@ export function NotesView() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="max-w-6xl mx-auto p-5 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{viewTitle}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h1 className="text-xl font-bold tracking-tight">{viewTitle}</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">
               {filteredNotes.length} {filteredNotes.length === 1 ? "note" : "notes"}
             </p>
           </div>
-          <Button onClick={handleNewNote}>
-            <Plus className="h-4 w-4 mr-1" />
-            New Note
-          </Button>
+          <div className="flex items-center gap-2">
+            {activeView === "daily" && (
+              <Button variant="outline" onClick={() => { openDailyNote(); }}>
+                <StickyNote className="h-4 w-4 mr-1" />
+                Today&apos;s Note
+              </Button>
+            )}
+            <Button size="sm" onClick={handleNewNote}>
+              <Plus className="h-4 w-4 mr-1" />
+              New Note
+            </Button>
+          </div>
         </div>
 
         {/* Toolbar */}
@@ -308,16 +309,25 @@ export function NotesView() {
             >
               {sortOrder === "desc" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
             </Button>
+            <Separator orientation="vertical" className="h-5 mx-1" />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setTagManagerOpen(true)}
+              title="Manage tags"
+            >
+              <Tag className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         {/* Notes Grid/List */}
         {filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <FileText className="h-8 w-8 text-muted-foreground/50" />
+            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-3">
+              <FileText className="h-7 w-7 text-muted-foreground/50" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">No notes found</h3>
+            <h3 className="text-base font-semibold mb-1">No notes found</h3>
             <p className="text-sm text-muted-foreground mb-4">
               {searchQuery ? "Try a different search term" : "Create your first note to get started"}
             </p>
@@ -346,6 +356,23 @@ export function NotesView() {
 
         <div className="h-6" />
       </div>
+
+      <Dialog open={tagManagerOpen} onOpenChange={setTagManagerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary" />
+              Manage Tags
+            </DialogTitle>
+            <DialogDescription>
+              Rename, merge, recolor or delete tags across your whole vault.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <TagManager onClose={() => setTagManagerOpen(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </ScrollArea>
   );
 }

@@ -81,7 +81,7 @@ function TaskItem({ task }: { task: Task }) {
     return (
       <motion.div
         layout
-        className="rounded-lg border border-primary bg-card/50 p-3 space-y-2"
+        className="rounded-lg border border-primary/40 bg-card p-3 space-y-2"
       >
         <Input
           value={editTitle}
@@ -119,7 +119,7 @@ function TaskItem({ task }: { task: Task }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       className={cn(
-        "group flex items-center gap-3 rounded-lg border border-border bg-card/30 p-3 hover:bg-accent/30 transition-all",
+        "group flex items-center gap-3 rounded-md border border-border bg-card p-2.5 hover:bg-accent/50 transition-all",
         task.status === "done" && "opacity-60"
       )}
     >

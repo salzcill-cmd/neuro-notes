@@ -1,12 +1,10 @@
 import { create } from "zustand";
-import type { Note, Tag } from "@/types";
+import type { Note } from "@/types";
+import { generateId, extractWikiLinks } from "@/lib/utils";
 
 interface NoteState {
   notes: Note[];
   currentNote: Note | null;
-  recentNotes: Note[];
-  favoriteNotes: Note[];
-  pinnedNotes: Note[];
   searchQuery: string;
   searchResults: Note[];
   selectedNotes: Set<string>;
@@ -14,6 +12,9 @@ interface NoteState {
   sortOrder: "asc" | "desc";
   filterTag: string | null;
   filterFolder: string | null;
+  lastSavedAt: string | null;
+  editorReloadToken: number;
+  bumpEditorReload: () => void;
   setNotes: (notes: Note[]) => void;
   addNote: (note: Note) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
@@ -34,6 +35,8 @@ interface NoteState {
   toggleArchive: (id: string) => void;
   moveToTrash: (id: string) => void;
   restoreFromTrash: (id: string) => void;
+  syncLinks: (noteId: string) => void;
+  syncBacklinks: () => void;
 }
 
 const loadNotes = (): Note[] => {
@@ -55,9 +58,6 @@ const saveNotes = (notes: Note[]) => {
 export const useNoteStore = create<NoteState>((set, get) => ({
   notes: loadNotes(),
   currentNote: null,
-  recentNotes: [],
-  favoriteNotes: [],
-  pinnedNotes: [],
   searchQuery: "",
   searchResults: [],
   selectedNotes: new Set(),
@@ -65,16 +65,21 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   sortOrder: "desc",
   filterTag: null,
   filterFolder: null,
+  lastSavedAt: null,
+  editorReloadToken: 0,
+
+  bumpEditorReload: () =>
+    set((state) => ({ editorReloadToken: state.editorReloadToken + 1 })),
 
   setNotes: (notes) => {
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
   },
 
   addNote: (note) => {
     const notes = [note, ...get().notes];
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
   },
 
   updateNote: (id, updates) => {
@@ -86,7 +91,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       get().currentNote?.id === id
         ? { ...get().currentNote!, ...updates, updatedAt: new Date().toISOString() }
         : get().currentNote;
-    set({ notes, currentNote });
+    set({ notes, currentNote, lastSavedAt: new Date().toISOString() });
   },
 
   deleteNote: (id) => {
@@ -98,7 +103,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     saveNotes(notes);
     const currentNote =
       get().currentNote?.id === id ? null : get().currentNote;
-    set({ notes, currentNote });
+    set({ notes, currentNote, lastSavedAt: new Date().toISOString() });
   },
 
   setCurrentNote: (note) => set({ currentNote: note }),
@@ -177,7 +182,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       n.id === id ? { ...n, isPinned: !n.isPinned } : n
     );
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
   },
 
   toggleFavorite: (id) => {
@@ -185,7 +190,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       n.id === id ? { ...n, isFavorite: !n.isFavorite } : n
     );
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
   },
 
   toggleArchive: (id) => {
@@ -193,7 +198,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       n.id === id ? { ...n, isArchived: !n.isArchived } : n
     );
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
   },
 
   moveToTrash: (id) => {
@@ -203,7 +208,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         : n
     );
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
   },
 
   restoreFromTrash: (id) => {
@@ -211,6 +216,84 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       n.id === id ? { ...n, isDeleted: false, deletedAt: undefined } : n
     );
     saveNotes(notes);
-    set({ notes });
+    set({ notes, lastSavedAt: new Date().toISOString() });
+  },
+
+  /**
+   * Recompute a note's `links` from the [[wiki-links]] in its plain text,
+   * resolving titles to note ids. No-op when nothing changed.
+   */
+  syncLinks: (noteId) => {
+    const { notes } = get();
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+
+    const titles = extractWikiLinks(note.plainText ?? "");
+    const links = titles.map((title) => {
+      const target = notes.find(
+        (n) => !n.isDeleted && n.title.toLowerCase() === title.toLowerCase()
+      );
+      return {
+        id: generateId(),
+        sourceNoteId: noteId,
+        targetNoteId: target?.id ?? `unresolved:${title}`,
+        label: title,
+      };
+    });
+
+    const same =
+      links.length === note.links.length &&
+      links.every((l, i) => l.targetNoteId === note.links[i]?.targetNoteId);
+    if (same) return;
+
+    const updated = notes.map((n) =>
+      n.id === noteId ? { ...n, links } : n
+    );
+    saveNotes(updated);
+    set({ notes: updated, lastSavedAt: new Date().toISOString() });
+    get().syncBacklinks();
+  },
+
+  /**
+   * Recompute the `backlinks` array of every note based on the `links`
+   * ([[wiki-links]]) found in all notes. Cheap single pass over in-memory
+   * notes; skips writes when nothing changed.
+   */
+  syncBacklinks: () => {
+    const { notes } = get();
+    const updated = notes.map((n) => {
+      const sources = notes.filter(
+        (o) => o.id !== n.id && o.links.some((l) => l.targetNoteId === n.id)
+      );
+      if (sources.length === 0 && n.backlinks.length === 0) return n;
+      const existing = new Map(n.backlinks.map((b) => [b.sourceNoteId, b]));
+      const backlinks = sources.map((o) => {
+        const prev = existing.get(o.id);
+        if (prev) return prev;
+        return {
+          id: generateId(),
+          sourceNoteId: o.id,
+          targetNoteId: n.id,
+          label: o.title,
+        };
+      });
+      const same =
+        backlinks.length === n.backlinks.length &&
+        backlinks.every((b, i) => b.sourceNoteId === n.backlinks[i]?.sourceNoteId);
+      return same ? n : { ...n, backlinks };
+    });
+
+    const changed = updated.some((n, i) => n !== notes[i]);
+    if (!changed) return;
+
+    saveNotes(updated);
+    const currentNote = get().currentNote;
+    set({
+      notes: updated,
+      lastSavedAt: new Date().toISOString(),
+      currentNote: currentNote
+        ? updated.find((n) => n.id === currentNote.id) ?? currentNote
+        : currentNote,
+    });
   },
 }));

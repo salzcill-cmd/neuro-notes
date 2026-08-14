@@ -6,22 +6,18 @@ import {
   Palette,
   Type,
   Keyboard,
-  Bell,
-  Shield,
   Database,
-  Puzzle,
-  Code,
   Monitor,
   Moon,
   Sun,
   Contrast,
   Check,
-  RefreshCw,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore, useNoteStore } from "@/stores";
 import { cn } from "@/lib/utils";
+import { htmlToMarkdown } from "@/lib/markdown";
 import type { Theme } from "@/types";
 
 const themes: { value: Theme; label: string; icon: React.ReactNode; description: string }[] = [
@@ -32,25 +28,21 @@ const themes: { value: Theme; label: string; icon: React.ReactNode; description:
 ];
 
 const accentColors = [
-  { name: "Violet", value: "263 70% 50%", color: "bg-violet-600" },
-  { name: "Blue", value: "217 91% 60%", color: "bg-blue-600" },
-  { name: "Cyan", value: "189 94% 43%", color: "bg-cyan-600" },
-  { name: "Green", value: "142 71% 45%", color: "bg-green-600" },
-  { name: "Yellow", value: "48 96% 53%", color: "bg-yellow-500" },
-  { name: "Orange", value: "25 95% 53%", color: "bg-orange-500" },
-  { name: "Red", value: "0 84% 60%", color: "bg-red-600" },
-  { name: "Pink", value: "330 81% 60%", color: "bg-pink-600" },
+  { name: "Blue", value: "217 91% 60%", color: "bg-blue-500" },
+  { name: "Sky", value: "199 89% 48%", color: "bg-sky-500" },
+  { name: "Cyan", value: "189 94% 43%", color: "bg-cyan-500" },
+  { name: "Emerald", value: "160 84% 39%", color: "bg-emerald-500" },
+  { name: "Amber", value: "38 92% 50%", color: "bg-amber-500" },
+  { name: "Orange", value: "24 95% 53%", color: "bg-orange-500" },
+  { name: "Red", value: "0 84% 60%", color: "bg-red-500" },
+  { name: "Pink", value: "330 81% 60%", color: "bg-pink-500" },
 ];
 
 const settingsSections = [
   { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
   { id: "editor", label: "Editor", icon: <Type className="h-4 w-4" /> },
   { id: "shortcuts", label: "Keyboard Shortcuts", icon: <Keyboard className="h-4 w-4" /> },
-  { id: "notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
-  { id: "security", label: "Security", icon: <Shield className="h-4 w-4" /> },
   { id: "storage", label: "Storage", icon: <Database className="h-4 w-4" /> },
-  { id: "plugins", label: "Plugins", icon: <Puzzle className="h-4 w-4" /> },
-  { id: "api", label: "API & Developer", icon: <Code className="h-4 w-4" /> },
 ];
 
 function SettingsSection({
@@ -131,57 +123,9 @@ export function SettingsView() {
   const setSettings = useAppStore((s) => s.setSettings);
   const [activeSection, setActiveSection] = React.useState("appearance");
 
-  // Notification settings (persisted to localStorage)
-  const [emailNotifs, toggleEmailNotifs] = useToggle(
-    typeof window !== "undefined" ? localStorage.getItem("nn-email-notifs") === "true" : false
-  );
-  const [desktopNotifs, toggleDesktopNotifs] = useToggle(
-    typeof window !== "undefined" ? localStorage.getItem("nn-desktop-notifs") === "true" : false
-  );
-  const [taskReminders, toggleTaskReminders] = useToggle(
-    typeof window !== "undefined" ? localStorage.getItem("nn-task-reminders") === "true" : false
-  );
-  const [dailyDigest, toggleDailyDigest] = useToggle(
-    typeof window !== "undefined" ? localStorage.getItem("nn-daily-digest") === "true" : false
-  );
-
-  // Security settings
-  const [twoFactor, toggleTwoFactor] = useToggle(false);
-  const [biometric, toggleBiometric] = useToggle(false);
-  const [autoLock, setAutoLock] = React.useState("15");
-  const [encryption, toggleEncryption] = useToggle(false);
-
   // Storage settings
   const [offlineStorage, toggleOfflineStorage] = useToggle(true);
   const [autoBackup, toggleAutoBackup] = useToggle(false);
-
-  // Plugins
-  const [plugins, setPlugins] = React.useState<Record<string, boolean>>({
-    markdown: true,
-    latex: false,
-    mermaid: false,
-    webclipper: false,
-    aiwriting: false,
-  });
-
-  // API settings
-  const [webhookUrl, setWebhookUrl] = React.useState("");
-  const [rateLimit, setRateLimit] = React.useState("60");
-  const [debugMode, toggleDebugMode] = useToggle(false);
-
-  // Persist notification settings
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("nn-email-notifs", String(emailNotifs));
-      localStorage.setItem("nn-desktop-notifs", String(desktopNotifs));
-      localStorage.setItem("nn-task-reminders", String(taskReminders));
-      localStorage.setItem("nn-daily-digest", String(dailyDigest));
-    }
-  }, [emailNotifs, desktopNotifs, taskReminders, dailyDigest]);
-
-  const togglePlugin = (key: string) => {
-    setPlugins((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const handleExport = () => {
     const notes = useNoteStore.getState().notes;
@@ -190,6 +134,21 @@ export function SettingsView() {
     const a = document.createElement("a");
     a.href = url;
     a.download = "neuronotes-export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportMarkdown = () => {
+    const active = useNoteStore
+      .getState()
+      .notes.filter((n) => !n.isDeleted)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    const parts = active.map((n) => `# ${n.title || "Untitled"}\n\n${htmlToMarkdown(n.content || "")}`);
+    const blob = new Blob([parts.join("\n\n---\n\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "neuronotes-export.md";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -232,7 +191,7 @@ export function SettingsView() {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="rounded-xl border border-border bg-card/30 p-6 space-y-8">
+              <div className="surface rounded-lg p-6 space-y-8">
                 {activeSection === "appearance" && (
                   <>
                     <SettingsSection title="Theme">
@@ -327,6 +286,24 @@ export function SettingsView() {
                 {activeSection === "editor" && (
                   <>
                     <SettingsSection title="Editor Settings">
+                      <SettingRow label="Default View" description="Which view opens when you open a note">
+                        <div className="flex items-center rounded-md border border-border bg-muted/40 p-0.5">
+                          {(["edit", "split", "preview"] as const).map((v) => (
+                            <button
+                              key={v}
+                              onClick={() => setSettings({ defaultView: v })}
+                              className={cn(
+                                "rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors",
+                                settings.defaultView === v
+                                  ? "bg-background text-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </SettingRow>
                       <SettingRow label="Auto Save" description="Automatically save changes">
                         <Toggle checked={settings.autoSave} onToggle={() => setSettings({ autoSave: !settings.autoSave })} label="Auto Save" />
                       </SettingRow>
@@ -347,14 +324,13 @@ export function SettingsView() {
                   <SettingsSection title="Keyboard Shortcuts">
                     <div className="space-y-2">
                       {[
+                        { label: "Quick Switcher", shortcut: "Ctrl+O" },
                         { label: "Command Palette", shortcut: "Ctrl+K" },
                         { label: "New Note", shortcut: "Ctrl+N" },
-                        { label: "Search", shortcut: "Ctrl+Shift+F" },
-                        { label: "Toggle Sidebar", shortcut: "Ctrl+\\" },
-                        { label: "Save", shortcut: "Ctrl+S" },
-                        { label: "Zen Mode", shortcut: "Ctrl+Shift+Z" },
                         { label: "Daily Note", shortcut: "Ctrl+D" },
-                        { label: "Graph View", shortcut: "Ctrl+G" },
+                        { label: "Search", shortcut: "Ctrl+Shift+F" },
+                        { label: "Tasks", shortcut: "Ctrl+Shift+T" },
+                        { label: "Zen Mode", shortcut: "Ctrl+Shift+Z" },
                       ].map((item) => (
                         <div key={item.label} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-accent/50">
                           <span className="text-sm">{item.label}</span>
@@ -364,52 +340,6 @@ export function SettingsView() {
                         </div>
                       ))}
                     </div>
-                  </SettingsSection>
-                )}
-
-                {activeSection === "notifications" && (
-                  <SettingsSection title="Notifications">
-                    <SettingRow label="Email Notifications" description="Receive email alerts for tasks">
-                      <Toggle checked={emailNotifs} onToggle={toggleEmailNotifs} label="Email Notifications" />
-                    </SettingRow>
-                    <SettingRow label="Desktop Notifications" description="Browser push notifications">
-                      <Toggle checked={desktopNotifs} onToggle={toggleDesktopNotifs} label="Desktop Notifications" />
-                    </SettingRow>
-                    <SettingRow label="Task Reminders" description="Remind you of upcoming due dates">
-                      <Toggle checked={taskReminders} onToggle={toggleTaskReminders} label="Task Reminders" />
-                    </SettingRow>
-                    <SettingRow label="Daily Digest" description="Summary of your daily activity">
-                      <Toggle checked={dailyDigest} onToggle={toggleDailyDigest} label="Daily Digest" />
-                    </SettingRow>
-                  </SettingsSection>
-                )}
-
-                {activeSection === "security" && (
-                  <SettingsSection title="Security">
-                    <SettingRow label="Two-Factor Authentication" description="Extra layer of account security">
-                      <Toggle checked={twoFactor} onToggle={toggleTwoFactor} label="Two-Factor Authentication" />
-                    </SettingRow>
-                    <SettingRow label="Biometric Lock" description="Require fingerprint or face to open app">
-                      <Toggle checked={biometric} onToggle={toggleBiometric} label="Biometric Lock" />
-                    </SettingRow>
-                    <SettingRow label="Auto-Lock" description="Lock app after inactivity">
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={autoLock}
-                          onChange={(e) => setAutoLock(e.target.value)}
-                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-                        >
-                          <option value="5">5 minutes</option>
-                          <option value="15">15 minutes</option>
-                          <option value="30">30 minutes</option>
-                          <option value="60">1 hour</option>
-                          <option value="never">Never</option>
-                        </select>
-                      </div>
-                    </SettingRow>
-                    <SettingRow label="Encryption" description="Encrypt local data at rest">
-                      <Toggle checked={encryption} onToggle={toggleEncryption} label="Encryption" />
-                    </SettingRow>
                   </SettingsSection>
                 )}
 
@@ -428,13 +358,21 @@ export function SettingsView() {
                     <SettingRow label="Auto Backup" description="Backup data daily to cloud">
                       <Toggle checked={autoBackup} onToggle={toggleAutoBackup} label="Auto Backup" />
                     </SettingRow>
-                    <SettingRow label="Export Data" description="Download all notes as JSON">
-                      <button
-                        onClick={handleExport}
-                        className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent"
-                      >
-                        Export
-                      </button>
+                    <SettingRow label="Export Data" description="Download all notes as JSON or Markdown">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleExport}
+                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                        >
+                          Export JSON
+                        </button>
+                        <button
+                          onClick={handleExportMarkdown}
+                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                        >
+                          Export .md
+                        </button>
+                      </div>
                     </SettingRow>
                     <SettingRow label="Clear All Data" description="Delete all notes and settings (irreversible)">
                       <button
@@ -447,82 +385,7 @@ export function SettingsView() {
                   </SettingsSection>
                 )}
 
-                {activeSection === "plugins" && (
-                  <SettingsSection title="Plugins">
-                    <div className="space-y-3">
-                      {[
-                        { key: "markdown", name: "Markdown Export", description: "Export notes to .md files" },
-                        { key: "latex", name: "LaTeX Math", description: "Render math equations with KaTeX" },
-                        { key: "mermaid", name: "Mermaid Diagrams", description: "Create flowcharts and diagrams" },
-                        { key: "webclipper", name: "Web Clipper", description: "Save web pages as notes" },
-                        { key: "aiwriting", name: "AI Writing Assistant", description: "AI-powered writing suggestions" },
-                      ].map((plugin) => (
-                        <div key={plugin.key} className="flex items-center justify-between rounded-lg border border-border p-4">
-                          <div className="flex-1 min-w-0 pr-4">
-                            <p className="text-sm font-medium">{plugin.name}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{plugin.description}</p>
-                          </div>
-                          <Toggle
-                            checked={plugins[plugin.key]}
-                            onToggle={() => togglePlugin(plugin.key)}
-                            label={plugin.name}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </SettingsSection>
-                )}
 
-                {activeSection === "api" && (
-                  <SettingsSection title="API & Developer">
-                    <SettingRow label="API Key" description="Your personal API key for integrations">
-                      <div className="flex items-center gap-2">
-                        <code className="rounded border border-border bg-muted px-2 py-1 text-xs font-mono select-all">
-                          nnote_sk_••••••••••••••••
-                        </code>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText("nnote_sk_demo_key_placeholder");
-                          }}
-                          className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent"
-                        >
-                          Copy
-                        </button>
-                        <button
-                          onClick={() => {}}
-                          className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent text-muted-foreground"
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </SettingRow>
-                    <SettingRow label="Webhook URL" description="Endpoint for real-time events">
-                      <input
-                        type="url"
-                        value={webhookUrl}
-                        onChange={(e) => setWebhookUrl(e.target.value)}
-                        placeholder="https://your-app.com/webhook"
-                        className="w-64 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-                      />
-                    </SettingRow>
-                    <SettingRow label="Rate Limiting" description="API requests per minute">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={rateLimit}
-                          onChange={(e) => setRateLimit(e.target.value)}
-                          min={10}
-                          max={1000}
-                          className="w-20 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-center"
-                        />
-                        <span className="text-xs text-muted-foreground">req/min</span>
-                      </div>
-                    </SettingRow>
-                    <SettingRow label="Debug Mode" description="Enable verbose logging for development">
-                      <Toggle checked={debugMode} onToggle={toggleDebugMode} label="Debug Mode" />
-                    </SettingRow>
-                  </SettingsSection>
-                )}
               </div>
             </div>
           </div>

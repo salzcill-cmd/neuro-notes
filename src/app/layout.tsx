@@ -16,8 +16,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "NeuroNotes — Your Second Brain",
-  description: "AI-Powered Knowledge Management Platform. Think better, connect ideas, build knowledge.",
-  keywords: ["notes", "knowledge management", "second brain", "AI", "productivity", "wiki", "PKM"],
+  description: "Local-first knowledge management. Capture thoughts, connect ideas, and build a second brain.",
+  keywords: ["notes", "knowledge management", "second brain", "wiki", "PKM", "obsidian", "productivity"],
   authors: [{ name: "NeuroNotes" }],
   creator: "NeuroNotes",
   openGraph: {
@@ -25,12 +25,12 @@ export const metadata: Metadata = {
     locale: "en_US",
     siteName: "NeuroNotes",
     title: "NeuroNotes — Your Second Brain",
-    description: "AI-Powered Knowledge Management Platform",
+    description: "Local-first knowledge management. Capture, connect, and create.",
   },
   twitter: {
     card: "summary_large_image",
     title: "NeuroNotes — Your Second Brain",
-    description: "AI-Powered Knowledge Management Platform",
+    description: "Local-first knowledge management. Capture, connect, and create.",
   },
   manifest: "/manifest.json",
   icons: {

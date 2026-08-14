@@ -7,29 +7,26 @@ import {
   Star,
   Clock,
   CheckSquare,
-  TrendingUp,
-  PenTool,
-  Sparkles,
   Plus,
   ArrowRight,
-  BookOpen,
-  Zap,
-  Calendar,
-  Activity,
-  Layers,
   GitFork,
-  Timer,
+  StickyNote,
+  Hash,
+  Layers,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNoteStore, useTaskStore, useAppStore, useWorkspaceStore } from "@/stores";
 import { cn, formatDate, generateId } from "@/lib/utils";
+import { openDailyNote } from "@/lib/dailyNote";
+import { ActivityHeatmap } from "./ActivityHeatmap";
 
 const fadeIn = {
-  initial: { opacity: 0, y: 10 },
+  initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.3 },
+  transition: { duration: 0.25 },
 };
 
 interface WidgetCardProps {
@@ -44,15 +41,12 @@ function WidgetCard({ title, icon, className, children, action }: WidgetCardProp
   return (
     <motion.div
       {...fadeIn}
-      className={cn(
-        "rounded-xl border border-border bg-card/50 backdrop-blur-sm p-5 hover:border-border/80 transition-colors",
-        className
-      )}
+      className={cn("surface rounded-lg p-4", className)}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{icon}</span>
-          <h3 className="text-sm font-semibold">{title}</h3>
+          <h3 className="text-[13px] font-semibold">{title}</h3>
         </div>
         {action}
       </div>
@@ -65,32 +59,25 @@ function StatCard({
   icon,
   label,
   value,
-  change,
-  color,
+  hint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
-  change?: string;
-  color: string;
+  hint?: string;
 }) {
   return (
-    <motion.div {...fadeIn} className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4">
+    <motion.div {...fadeIn} className="surface rounded-lg p-3.5">
       <div className="flex items-center gap-3">
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", color)}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
           {icon}
         </div>
-        <div>
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="min-w-0">
+          <p className="text-xl font-bold leading-tight tabular-nums">{value}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{label}</p>
         </div>
       </div>
-      {change && (
-        <div className="mt-2 flex items-center gap-1 text-xs text-emerald-500">
-          <TrendingUp className="h-3 w-3" />
-          {change}
-        </div>
-      )}
+      {hint && <p className="mt-1.5 text-[11px] text-muted-foreground/80">{hint}</p>}
     </motion.div>
   );
 }
@@ -104,7 +91,10 @@ export function DashboardView() {
   const setActiveView = useAppStore((s) => s.setActiveView);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
 
-  const activeNotes = notes.filter((n) => !n.isDeleted && !n.isArchived);
+  const activeNotes = React.useMemo(
+    () => notes.filter((n) => !n.isDeleted && !n.isArchived),
+    [notes]
+  );
   const favoriteNotes = activeNotes.filter((n) => n.isFavorite);
   const recentNotes = [...activeNotes]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -113,7 +103,8 @@ export function DashboardView() {
   const completedTasks = tasks.filter((t) => t.status === "done");
 
   const today = new Date();
-  const greeting = today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
+  const greeting =
+    today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
 
   const handleNewNote = () => {
     const now = new Date().toISOString();
@@ -139,107 +130,103 @@ export function DashboardView() {
     setCurrentNoteId(note.id);
   };
 
-  const totalWords = activeNotes.reduce((acc, n) => acc + (n.plainText?.split(/\s+/).length || 0), 0);
+  const totalWords = activeNotes.reduce((acc, n) => acc + (n.plainText?.split(/\s+/).filter(Boolean).length || 0), 0);
   const totalBacklinks = activeNotes.reduce((acc, n) => acc + n.backlinks.length, 0);
 
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const notesThisWeek = activeNotes.filter((n) => new Date(n.createdAt) > weekAgo).length;
-  const wordsThisWeek = activeNotes
-    .filter((n) => new Date(n.updatedAt) > weekAgo)
-    .reduce((acc, n) => acc + (n.plainText?.split(/\s+/).length || 0), 0);
-  const weeklyGoal = 10;
-  const weeklyProgress = Math.min(notesThisWeek, weeklyGoal);
+  // Top tags across active notes.
+  const topTags = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    activeNotes.forEach((n) => n.tags.forEach((t) => counts.set(t.name, (counts.get(t.name) || 0) + 1)));
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [activeNotes]);
 
   return (
     <ScrollArea className="h-full">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-6xl space-y-4 p-5">
         {/* Welcome */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-1"
+          transition={{ duration: 0.35 }}
+          className="space-y-0.5"
         >
-          <h1 className="text-3xl font-bold tracking-tight">{greeting}</h1>
-          <p className="text-muted-foreground">
-            {activeNotes.length} notes · {pendingTasks.length} pending tasks · {totalWords.toLocaleString()} words written
+          <h1 className="text-2xl font-bold tracking-tight">{greeting}</h1>
+          <p className="text-[13px] text-muted-foreground">
+            {activeNotes.length} notes · {pendingTasks.length} pending tasks · {totalWords.toLocaleString()} words
           </p>
         </motion.div>
 
         {/* Quick Actions */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
           className="flex flex-wrap gap-2"
         >
-          <Button onClick={handleNewNote}>
-            <Plus className="h-4 w-4" />
+          <Button size="sm" onClick={handleNewNote}>
+            <Plus className="h-3.5 w-3.5" />
             New Note
           </Button>
-          <Button variant="outline" onClick={() => setActiveView("tasks")}>
-            <CheckSquare className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => { openDailyNote(); setActiveView("notes"); }}>
+            <StickyNote className="h-3.5 w-3.5" />
+            Daily Note
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setActiveView("tasks")}>
+            <CheckSquare className="h-3.5 w-3.5" />
             Tasks
           </Button>
-          <Button variant="outline" onClick={() => setActiveView("graph")}>
-            <GitFork className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => setActiveView("graph")}>
+            <GitFork className="h-3.5 w-3.5" />
             Graph
-          </Button>
-          <Button variant="outline" onClick={() => setActiveView("ai")}>
-            <Sparkles className="h-4 w-4" />
-            AI Assistant
           </Button>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard
-            icon={<FileText className="h-5 w-5 text-primary" />}
+            icon={<FileText className="h-4 w-4" />}
             label="Total Notes"
             value={activeNotes.length}
-            change={notesThisWeek > 0 ? `+${notesThisWeek} this week` : undefined}
-            color="bg-primary/10"
+            hint={activeNotes.length > 0 ? "Across all folders" : undefined}
           />
           <StatCard
-            icon={<PenTool className="h-5 w-5 text-blue-500" />}
+            icon={<FileText className="h-4 w-4" />}
             label="Words Written"
             value={totalWords.toLocaleString()}
-            change={wordsThisWeek > 0 ? `+${wordsThisWeek.toLocaleString()} this week` : undefined}
-            color="bg-blue-500/10"
+            hint={totalWords > 0 ? `${Math.round(totalWords / Math.max(1, activeNotes.length))} avg / note` : undefined}
           />
           <StatCard
-            icon={<CheckSquare className="h-5 w-5 text-emerald-500" />}
+            icon={<CheckSquare className="h-4 w-4" />}
             label="Tasks Done"
             value={completedTasks.length}
-            change={`${pendingTasks.length} remaining`}
-            color="bg-emerald-500/10"
+            hint={`${pendingTasks.length} remaining`}
           />
           <StatCard
-            icon={<GitFork className="h-5 w-5 text-purple-500" />}
+            icon={<GitFork className="h-4 w-4" />}
             label="Connections"
             value={totalBacklinks}
-            change={totalBacklinks > 0 ? "Knowledge links" : "No links yet"}
-            color="bg-purple-500/10"
+            hint={totalBacklinks > 0 ? "via wiki-links" : "Use [[links]] to connect"}
           />
         </div>
 
         {/* Main Widgets */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {/* Recent Notes */}
           <WidgetCard
             title="Recent Notes"
             icon={<Clock className="h-4 w-4" />}
             className="md:col-span-2"
             action={
-              <Button variant="ghost" size="sm" onClick={() => setActiveView("notes")}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setActiveView("notes")}>
                 View All <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             }
           >
-            <div className="space-y-2">
+            <div className="space-y-1">
               {recentNotes.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
+                <p className="py-6 text-center text-[13px] text-muted-foreground">
                   No notes yet. Create your first note!
                 </p>
               ) : (
@@ -250,23 +237,20 @@ export function DashboardView() {
                       setCurrentNote(note);
                       setCurrentNoteId(note.id);
                     }}
-                    className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-accent/50 transition-colors text-left"
+                    className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-accent/60 transition-colors"
                   >
                     {note.color && note.color !== "transparent" ? (
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: note.color }}
-                      />
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: note.color }} />
                     ) : (
                       <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{note.title || "Untitled"}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {note.plainText?.slice(0, 80) || "Empty note"}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-medium">{note.title || "Untitled"}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {note.plainText?.slice(0, 70) || "Empty note"}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
                       {formatDate(note.updatedAt)}
                     </span>
                   </button>
@@ -275,39 +259,31 @@ export function DashboardView() {
             </div>
           </WidgetCard>
 
-          {/* Tasks */}
+          {/* Today's Tasks */}
           <WidgetCard
-            title="Today's Tasks"
+            title="Tasks"
             icon={<CheckSquare className="h-4 w-4" />}
             action={
-              <Button variant="ghost" size="sm" onClick={() => setActiveView("tasks")}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setActiveView("tasks")}>
                 View All <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             }
           >
-            <div className="space-y-2">
+            <div className="space-y-1">
               {pendingTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
+                <p className="py-6 text-center text-[13px] text-muted-foreground">
                   All caught up! No pending tasks.
                 </p>
               ) : (
                 pendingTasks.slice(0, 5).map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-2 rounded-lg p-2 hover:bg-accent/50 transition-colors"
-                  >
+                  <div key={task.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/40 transition-colors">
                     <div
                       className={cn(
-                        "h-4 w-4 rounded-full border-2 shrink-0",
-                        task.status === "done"
-                          ? "bg-emerald-500 border-emerald-500"
-                          : "border-muted-foreground/30"
+                        "h-3.5 w-3.5 shrink-0 rounded-full border-2",
+                        task.status === "done" ? "border-emerald-500 bg-emerald-500" : "border-muted-foreground/30"
                       )}
                     />
-                    <span className={cn(
-                      "text-sm flex-1 truncate",
-                      task.status === "done" && "line-through text-muted-foreground"
-                    )}>
+                    <span className={cn("flex-1 truncate text-[13px]", task.status === "done" && "line-through text-muted-foreground")}>
                       {task.title}
                     </span>
                     {task.priority !== "none" && (
@@ -324,14 +300,39 @@ export function DashboardView() {
             </div>
           </WidgetCard>
 
-          {/* Favorites */}
+          {/* Activity Heatmap */}
           <WidgetCard
-            title="Favorites"
-            icon={<Star className="h-4 w-4" />}
+            title="Activity — last 12 months"
+            icon={<TrendingUp className="h-4 w-4" />}
+            className="lg:col-span-3"
           >
-            <div className="space-y-2">
+            <ActivityHeatmap notes={activeNotes} />
+          </WidgetCard>
+
+          {/* Top Tags */}
+          <WidgetCard title="Top Tags" icon={<Hash className="h-4 w-4" />}>
+            <div className="space-y-1.5">
+              {topTags.length === 0 ? (
+                <p className="py-4 text-center text-[13px] text-muted-foreground">
+                  Add tags to your notes to see them here.
+                </p>
+              ) : (
+                topTags.map(([name, count]) => (
+                  <div key={name} className="flex items-center gap-2">
+                    <Hash className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 truncate text-[13px]">{name}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">{count}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </WidgetCard>
+
+          {/* Favorites + Quick Capture */}
+          <WidgetCard title="Favorites" icon={<Star className="h-4 w-4" />}>
+            <div className="space-y-1">
               {favoriteNotes.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
+                <p className="py-4 text-center text-[13px] text-muted-foreground">
                   Star your favorite notes for quick access.
                 </p>
               ) : (
@@ -342,115 +343,35 @@ export function DashboardView() {
                       setCurrentNote(note);
                       setCurrentNoteId(note.id);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg p-2 hover:bg-accent/50 transition-colors text-left"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent/60 transition-colors"
                   >
-                    <Star className="h-3.5 w-3.5 text-yellow-500 shrink-0" fill="currentColor" />
-                    <span className="text-sm truncate">{note.title || "Untitled"}</span>
+                    <Star className="h-3 w-3 shrink-0 text-yellow-500" fill="currentColor" />
+                    <span className="truncate text-[13px]">{note.title || "Untitled"}</span>
                   </button>
                 ))
               )}
             </div>
           </WidgetCard>
 
-          {/* Quick Capture */}
-          <WidgetCard
-            title="Quick Capture"
-            icon={<Zap className="h-4 w-4" />}
-          >
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Quickly jot down an idea or thought.
-              </p>
-              <Button onClick={handleNewNote} className="w-full" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
+          <WidgetCard title="Quick Capture" icon={<Layers className="h-4 w-4" />}>
+            <div className="space-y-2">
+              <Button onClick={handleNewNote} className="w-full" variant="outline" size="sm">
+                <Plus className="h-3.5 w-3.5 mr-1" />
                 Quick Note
               </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setActiveView("daily")}>
-                  <Calendar className="h-3.5 w-3.5 mr-1" />
-                  Daily Note
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setActiveView("canvas")}>
-                  <Layers className="h-3.5 w-3.5 mr-1" />
-                  Canvas
-                </Button>
-              </div>
-            </div>
-          </WidgetCard>
-
-          {/* AI Suggestions */}
-          <WidgetCard
-            title="AI Assistant"
-            icon={<Sparkles className="h-4 w-4" />}
-            action={
-              <Badge variant="info" className="text-[10px]">
-                Beta
-              </Badge>
-            }
-          >
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Let AI help you organize, summarize, and connect your knowledge.
-              </p>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setActiveView("ai")}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Open AI Assistant
+              <Button variant="ghost" size="sm" className="w-full" onClick={() => { openDailyNote(); setActiveView("notes"); }}>
+                <StickyNote className="h-3.5 w-3.5 mr-1" />
+                Today&apos;s Daily Note
               </Button>
-              <div className="space-y-1.5">
-                {["Summarize recent notes", "Suggest connections", "Daily review"].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => setActiveView("ai")}
-                    className="flex w-full items-center gap-2 rounded-md p-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </WidgetCard>
-
-          {/* Knowledge Growth */}
-          <WidgetCard
-            title="Knowledge Growth"
-            icon={<TrendingUp className="h-4 w-4" />}
-            className="md:col-span-2 lg:col-span-1"
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-2xl font-bold">{activeNotes.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Notes</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {new Set(activeNotes.flatMap((n) => n.tags.map((t) => t.name))).size}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Unique Tags</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Weekly Goal</span>
-                  <span className="font-medium">{weeklyProgress}/{weeklyGoal} notes</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${(weeklyProgress / weeklyGoal) * 100}%` }}
-                  />
-                </div>
-              </div>
+              <Button variant="ghost" size="sm" className="w-full" onClick={() => setActiveView("canvas")}>
+                <Layers className="h-3.5 w-3.5 mr-1" />
+                Open Canvas
+              </Button>
             </div>
           </WidgetCard>
         </div>
 
-        <div className="h-6" />
+        <div className="h-4" />
       </div>
     </ScrollArea>
   );

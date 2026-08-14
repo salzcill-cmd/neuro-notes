@@ -30,10 +30,10 @@ import { useNoteStore, useAppStore } from "@/stores";
 import { cn } from "@/lib/utils";
 
 const nodeColors: Record<string, string> = {
-  note: "#8b5cf6",
-  tag: "#06b6d4",
+  note: "#60a5fa",
+  tag: "#2dd4bf",
   folder: "#f59e0b",
-  default: "#6366f1",
+  default: "#64748b",
 };
 
 function NoteNode({ data }: { data: { label: string; type: string; noteCount?: number; color?: string } }) {
@@ -161,8 +161,8 @@ export function GraphView() {
             target: link.targetNoteId,
             type: "smoothstep",
             animated: true,
-            style: { stroke: "#8b5cf6", strokeWidth: 1.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: "#8b5cf6" },
+            style: { stroke: "#60a5fa", strokeWidth: 1.5 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#60a5fa" },
           });
         }
       });
@@ -178,8 +178,8 @@ export function GraphView() {
             source: note.id,
             target: `tag-${tag.name}`,
             type: "smoothstep",
-            style: { stroke: "#06b6d4", strokeWidth: 1, opacity: 0.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: "#06b6d4" },
+            style: { stroke: "#2dd4bf", strokeWidth: 1, opacity: 0.5 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#2dd4bf" },
           });
         }
       });

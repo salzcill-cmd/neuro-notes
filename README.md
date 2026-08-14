@@ -2,9 +2,9 @@
 
 # NEURO NOTES
 
-### Your AI-Native Second Brain
+### Your Local-First Second Brain
 
-*Capture, connect, and create — powered by intelligence.*
+*Capture, connect, and create — quietly, in your own space.*
 
 ![Version](https://img.shields.io/badge/version-0.1.0-8b5cf6?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-06b6d4?style=for-the-badge)
@@ -26,7 +26,7 @@
 
 ---
 
-**NeuroNotes** is a production-ready, AI-native knowledge management platform that transforms how you think, write, and organize. Built for creators, researchers, and teams who demand excellence from their tools.
+**NeuroNotes** is a local-first knowledge management platform that transforms how you think, write, and organize. Built for creators, researchers, and teams who demand excellence from their tools. Everything lives in your browser's storage — fast, private, and offline by default.
 
 </div>
 
@@ -39,7 +39,7 @@
 <td width="50%" valign="top">
 
 ### Rich Text Editor
-Full-featured TipTap editor with **15+ extensions** — headings, bold, italic, strikethrough, code blocks, tables, task lists, links, images, highlights, text alignment, typography, and color.
+Full-featured TipTap editor with **15+ extensions** — headings, bold, italic, strikethrough, code blocks, tables, task lists, links, images, highlights, text alignment, typography, and color — plus **Edit / Split / Preview** reading modes (your default can be set in Settings) and a distraction-free **Zen Mode** (Ctrl/Cmd+Shift+Z).
 
 ### Knowledge Graph
 Interactive node-based visualization powered by ReactFlow. See your notes, tags, and connections come alive with circular layouts, animated edges, zoom/pan, and a minimap.
@@ -51,18 +51,33 @@ Kanban board and list views with priority levels, status tracking, subtasks, pro
 <td width="50%" valign="top">
 
 ### Dashboard
-At-a-glance view with statistics, recent notes, pending tasks, favorites, quick capture, and AI-powered suggestions.
+At-a-glance view with real statistics, recent notes, pending tasks, favorites, quick capture — plus a **year-long activity heatmap** (GitHub-style contribution graph) so you can see your writing streaks at a glance.
 
-### AI Assistant
-Conversational AI interface with typing indicators, message history, quick actions, and intelligent content suggestions.
+### Command Palette & Quick Switcher
+Raycast-style command palette with fuzzy search and keyboard navigation, plus an Obsidian-style quick switcher (Ctrl/Cmd+O) to jump to any note or create a new one on the fly.
 
-### Command Palette
-Raycast-style command palette with fuzzy search, keyboard navigation, recent actions, and instant access to everything.
+### Wiki-Links & Backlinks
+Obsidian-style `[[Note Title]]` links. Type or paste a link in the editor and it becomes a clickable pill — click it to preview the target note (or create it on the spot). Link notes from the link picker too, and watch backlinks appear in the note panel — the foundation of a true second brain.
+
+### Daily Notes & Status Bar
+One-keypress daily notes (Ctrl/Cmd+D) with a lightweight template, plus a status bar with live word count, save indicator, and a built-in **Focus Timer** (Pomodoro: 15/25/45/60-minute sessions) so you never have to leave your vault.
+
+### Reading Modes & Zen
+Edit, side-by-side split, and read-only preview for every note — preview links are clickable too. Zen Mode (Ctrl/Cmd+Shift+Z) hides everything but your writing; Escape brings it back.
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
+
+### Note History
+Every note keeps an automatic snapshot trail. Open the **History** tab in the note panel to browse past versions by time — restore any of them with one click. Your own safety net for writing.
+
+### Markdown Export
+One-click export: copy or download any note as clean `.md`, or export your entire vault as a single Markdown bundle — wiki-links and formatting preserved.
+
+### Tag Manager
+Organize your taxonomy from one place: rename, merge, recolor, or delete tags and watch every note & task update instantly across the whole vault.
 
 ### Infinite Canvas
 Spatial thinking with draggable cards, zoom/pan navigation, grid background, color coding, and freeform organization.
@@ -101,7 +116,7 @@ Pixel-perfect on every screen — from mobile phones to ultrawide monitors. Coll
 | **UI Library** | React 19 | Server Components, Hooks, Concurrent Features |
 | **Language** | TypeScript 5 | Full type safety, strict mode |
 | **Styling** | TailwindCSS 4 | Utility-first CSS, oklch colors, custom design tokens |
-| **Editor** | TipTap v3 | ProseMirror-based, 15+ extensions, customizable toolbar |
+| **Editor** | TipTap v3 | ProseMirror-based, wiki-links, 15+ extensions, customizable toolbar |
 | **Graph** | ReactFlow | Interactive node-based UI, minimap, controls |
 | **State** | Zustand | Lightweight, persistent stores with localStorage |
 | **Animation** | Framer Motion | Page transitions, layout animations, gesture support |
@@ -140,17 +155,22 @@ src/
 │   │   ├── AppLayout.tsx   # Root layout (sidebar, topbar, command palette)
 │   │   ├── MainContent.tsx # View router (switches between all views)
 │   │   ├── Topbar.tsx      # Top navigation bar
-│   │   └── TabBar.tsx      # Multi-tab note editing
+│   │   ├── TabBar.tsx      # Multi-tab note editing
+│   │   ├── StatusBar.tsx   # Word count, saved indicator, clock
+│   │   └── FocusTimer.tsx  # Pomodoro timer in the status bar
 │   │
 │   ├── sidebar/            # Sidebar navigation
 │   │   └── Sidebar.tsx     # Folders, tags, favorites, workspace, new note
 │   │
 │   ├── editor/             # Rich text editor
 │   │   ├── NoteEditor.tsx  # TipTap editor with 15+ extensions
-│   │   └── EditorToolbar.tsx # Full formatting toolbar
+│   │   ├── EditorToolbar.tsx # Full formatting toolbar
+│   │   ├── WikiLinkPreview.tsx # Hover/click preview for [[links]]
+│   │   └── extensions/WikiLink.ts # Wiki-link inline node
 │   │
 │   ├── dashboard/          # Dashboard view
-│   │   └── DashboardView.tsx
+│   │   ├── DashboardView.tsx
+│   │   └── ActivityHeatmap.tsx # Year-long contribution graph
 │   │
 │   ├── notes/              # Note management
 │   │   ├── NotesView.tsx   # Grid/list view with search & sort
@@ -163,8 +183,6 @@ src/
 │   ├── tasks/              # Task management
 │   │   └── TasksView.tsx   # Kanban + list views
 │   │
-│   ├── ai/                 # AI assistant
-│   │   └── AIAssistantView.tsx
 │   │
 │   ├── canvas/             # Infinite canvas
 │   │   └── CanvasView.tsx
@@ -172,11 +190,13 @@ src/
 │   ├── database/           # Database view
 │   │   └── DatabaseView.tsx
 │   │
-│   ├── command-palette/    # Command palette
-│   │   └── CommandPalette.tsx
+│   ├── command-palette/    # Command palette & quick switcher
+│   │   ├── CommandPalette.tsx
+│   │   └── QuickSwitcher.tsx
 │   │
 │   └── settings/           # Settings
-│       └── SettingsView.tsx
+│       ├── SettingsView.tsx
+│       └── TagManager.tsx  # Rename / merge / delete tags vault-wide
 │
 ├── stores/                 # Zustand state management
 │   ├── useAppStore.ts      # App-level state (theme, sidebar, tabs)
@@ -185,6 +205,7 @@ src/
 │   ├── useTagStore.ts      # Tags management
 │   ├── useWorkspaceStore.ts # Workspaces
 │   ├── useUIStore.ts       # UI state (toasts, panels, modals)
+│   ├── useHistoryStore.ts  # Note snapshots & version history
 │   └── index.ts            # Re-exports
 │
 ├── hooks/                  # Custom React hooks
@@ -205,7 +226,9 @@ src/
 │   └── themes.ts           # Color themes & accent palette
 │
 ├── lib/                    # Utilities
-│   └── utils.ts            # cn(), formatDate(), generateId(), etc.
+│   ├── utils.ts            # cn(), formatDate(), generateId(), etc.
+│   ├── markdown.ts         # HTML → Markdown converter (export)
+│   └── dailyNote.ts        # Daily note creation helper
 │
 └── styles/                 # Custom CSS
     └── editor.css          # TipTap editor typography styles
@@ -257,8 +280,8 @@ NeuroNotes uses a custom design system built on **oklch** color space for percep
 :root {
   --background: oklch(1 0 0);           /* Pure white */
   --foreground: oklch(0.145 0 0);       /* Near black */
-  --primary: oklch(0.65 0.19 285);      /* Vibrant purple */
-  --accent: oklch(0.65 0.19 285);       /* Primary accent */
+  --primary: oklch(0.64 0.13 255);      /* Calm blue */
+  --accent: oklch(0.64 0.13 255);       /* Primary accent */
   --muted: oklch(0.965 0 0);            /* Light gray */
   --border: oklch(0.922 0 0);           /* Subtle borders */
   --radius: 0.625rem;                    /* Rounded corners */
@@ -267,7 +290,7 @@ NeuroNotes uses a custom design system built on **oklch** color space for percep
 
 ### State Management
 
-All state is managed through **6 Zustand stores** with automatic localStorage persistence:
+All state is managed through **7 Zustand stores** with automatic localStorage persistence:
 
 | Store | Responsibility |
 |:---|:---|
@@ -277,15 +300,19 @@ All state is managed through **6 Zustand stores** with automatic localStorage pe
 | `useTagStore` | Tag management and assignment |
 | `useWorkspaceStore` | Workspace switching |
 | `useUIStore` | Toasts, panels, modals, active view |
+| `useHistoryStore` | Note snapshots & version history |
 
 ### Keyboard Shortcuts
 
 | Shortcut | Action |
 |:---|:---|
 | `Ctrl/Cmd + K` | Open command palette |
+| `Ctrl/Cmd + O` | Open quick switcher |
 | `Ctrl/Cmd + N` | Create new note |
-| `Ctrl/Cmd + B` | Toggle sidebar |
+| `Ctrl/Cmd + D` | Open / create today's daily note |
 | `Ctrl/Cmd + Shift + F` | Search notes |
+| `Ctrl/Cmd + Shift + T` | Jump to tasks |
+| `Ctrl/Cmd + Shift + Z` | Toggle Zen Mode |
 | `Escape` | Close modal / Exit zen mode |
 
 ---
@@ -338,7 +365,7 @@ The build uses **standalone output** — all dependencies are bundled. Copy `.ne
 | **Source Files** | 54 TypeScript/CSS files |
 | **Components** | 30+ React components |
 | **Custom Hooks** | 8 reusable hooks |
-| **Zustand Stores** | 6 persistent stores |
+| **Zustand Stores** | 7 persistent stores |
 | **TipTap Extensions** | 15+ editor extensions |
 | **UI Primitives** | 13 design system components |
 | **Built-in Templates** | 8 note templates |

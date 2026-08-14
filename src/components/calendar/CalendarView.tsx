@@ -133,7 +133,7 @@ export function CalendarView() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-5"
+              className="rounded-lg border border-border bg-card p-4"
             >
               {/* Month Navigation */}
               <div className="flex items-center justify-between mb-4">
@@ -224,7 +224,7 @@ export function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-5"
+              className="rounded-lg border border-border bg-card p-4"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>

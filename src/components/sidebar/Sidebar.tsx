@@ -23,7 +23,6 @@ import {
   Settings,
   FileCode,
   PanelLeftClose,
-  Sparkles,
   StickyNote,
   Archive,
 } from "lucide-react";
@@ -98,7 +97,9 @@ interface SidebarItemProps {
 function SidebarItem({ icon, label, count, active, onClick, onContextMenu, className, badge }: SidebarItemProps) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        onClick?.();
+      }}
       onContextMenu={onContextMenu}
       className={cn(
         "group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-all duration-150",
@@ -120,7 +121,15 @@ function SidebarItem({ icon, label, count, active, onClick, onContextMenu, class
   );
 }
 
-function FolderItem({ folder, level = 0 }: { folder: FolderType; level?: number }) {
+function FolderItem({
+  folder,
+  level = 0,
+  onNavigate,
+}: {
+  folder: FolderType;
+  level?: number;
+  onNavigate?: () => void;
+}) {
   const expandedFolders = useAppStore((s) => s.expandedFolders);
   const toggleFolder = useAppStore((s) => s.toggleFolder);
   const currentFolderId = useAppStore((s) => s.currentFolderId);
@@ -139,6 +148,7 @@ function FolderItem({ folder, level = 0 }: { folder: FolderType; level?: number 
         onClick={() => {
           toggleFolder(folder.id);
           setCurrentFolderId(folder.id);
+          onNavigate?.();
         }}
         className={cn(
           "group flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-all",
@@ -180,7 +190,7 @@ function FolderItem({ folder, level = 0 }: { folder: FolderType; level?: number 
             className="overflow-hidden"
           >
             {subFolders.map((subFolder) => (
-              <FolderItem key={subFolder.id} folder={subFolder} level={level + 1} />
+              <FolderItem key={subFolder.id} folder={subFolder} level={level + 1} onNavigate={onNavigate} />
             ))}
           </motion.div>
         )}
@@ -189,7 +199,7 @@ function FolderItem({ folder, level = 0 }: { folder: FolderType; level?: number 
   );
 }
 
-function NoteItem({ note }: { note: Note }) {
+function NoteItem({ note, onNavigate }: { note: Note; onNavigate?: () => void }) {
   const currentNoteId = useAppStore((s) => s.currentNoteId);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
   const openTab = useAppStore((s) => s.openTab);
@@ -200,6 +210,7 @@ function NoteItem({ note }: { note: Note }) {
     setCurrentNoteId(note.id);
     setCurrentNote(note);
     openTab(note.id);
+    onNavigate?.();
   };
 
   return (
@@ -232,7 +243,7 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const sidebarWidth = useAppStore((s) => s.sidebarWidth);
   const setSidebarWidth = useAppStore((s) => s.setSidebarWidth);
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
@@ -291,6 +302,7 @@ export function Sidebar() {
     addNote(note);
     setCurrentNote(note);
     setCurrentNoteId(note.id);
+    onNavigate?.();
   };
 
   const handleNewFolder = () => {
@@ -299,6 +311,11 @@ export function Sidebar() {
       parentId: null,
       workspaceId: currentWorkspace?.id || "default",
     });
+  };
+
+  const navigate = (view: string) => {
+    setActiveView(view);
+    onNavigate?.();
   };
 
   const filteredNotes = searchQuery
@@ -321,7 +338,6 @@ export function Sidebar() {
     { id: "canvas", icon: <PenTool className="h-4 w-4" />, label: "Canvas" },
     { id: "database", icon: <Database className="h-4 w-4" />, label: "Database" },
     { id: "templates", icon: <FileCode className="h-4 w-4" />, label: "Templates" },
-    { id: "ai", icon: <Sparkles className="h-4 w-4" />, label: "AI Assistant" },
     { id: "archive", icon: <Archive className="h-4 w-4" />, label: "Archive", count: archivedNotes.length > 0 ? archivedNotes.length : undefined },
   ];
 
@@ -383,7 +399,9 @@ export function Sidebar() {
                   {filteredNotes.length === 0 ? (
                     <p className="px-2 py-2 text-xs text-muted-foreground">No notes found</p>
                   ) : (
-                    filteredNotes.map((note) => <NoteItem key={note.id} note={note} />)
+                    filteredNotes.map((note) => (
+                      <NoteItem key={note.id} note={note} onNavigate={onNavigate} />
+                    ))
                   )}
                 </SidebarSection>
               </div>
@@ -398,7 +416,7 @@ export function Sidebar() {
                   label={item.label}
                   count={item.count}
                   active={activeView === item.id}
-                  onClick={() => setActiveView(item.id)}
+                  onClick={() => navigate(item.id)}
                 />
               ))}
             </SidebarSection>
@@ -411,7 +429,7 @@ export function Sidebar() {
               defaultOpen
             >
               {rootFolders.map((folder) => (
-                <FolderItem key={folder.id} folder={folder} />
+                <FolderItem key={folder.id} folder={folder} onNavigate={onNavigate} />
               ))}
               <button
                 onClick={handleNewFolder}
@@ -428,7 +446,7 @@ export function Sidebar() {
             {recentNotes.length > 0 && (
               <SidebarSection title="Recent">
                 {recentNotes.map((note) => (
-                  <NoteItem key={note.id} note={note} />
+                  <NoteItem key={note.id} note={note} onNavigate={onNavigate} />
                 ))}
               </SidebarSection>
             )}
@@ -446,7 +464,9 @@ export function Sidebar() {
                       onClick={() => {
                         setFilterTag(filterTag === tag.name ? null : tag.name);
                         if (filterTag !== tag.name) {
-                          setActiveView("notes");
+                          navigate("notes");
+                        } else {
+                          onNavigate?.();
                         }
                       }}
                       badge={
@@ -469,7 +489,7 @@ export function Sidebar() {
                 <Separator className="my-2" />
                 <SidebarSection title="Favorites">
                   {favoriteNotes.map((note) => (
-                    <NoteItem key={note.id} note={note} />
+                    <NoteItem key={note.id} note={note} onNavigate={onNavigate} />
                   ))}
                 </SidebarSection>
               </>
@@ -485,13 +505,13 @@ export function Sidebar() {
               label="Trash"
               count={notes.filter((n) => n.isDeleted).length}
               active={activeView === "trash"}
-              onClick={() => setActiveView("trash")}
+              onClick={() => navigate("trash")}
             />
             <SidebarItem
               icon={<Settings className="h-4 w-4" />}
               label="Settings"
               active={activeView === "settings"}
-              onClick={() => setActiveView("settings")}
+              onClick={() => navigate("settings")}
             />
           </div>
         </>
@@ -503,7 +523,7 @@ export function Sidebar() {
           {navItems.slice(0, 8).map((item) => (
             <Tooltip key={item.id} content={item.label} side="right">
               <button
-                onClick={() => setActiveView(item.id)}
+                onClick={() => navigate(item.id)}
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
                   activeView === item.id
@@ -518,7 +538,7 @@ export function Sidebar() {
           <Separator className="w-6 my-1" />
           <Tooltip content="Settings" side="right">
             <button
-              onClick={() => setActiveView("settings")}
+              onClick={() => navigate("settings")}
               className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
             >
               <Settings className="h-4 w-4" />

@@ -73,7 +73,7 @@ const defaultTemplates: Template[] = [
     description: "Structured meeting notes with action items",
     icon: <Briefcase className="h-5 w-5" />,
     category: "Work",
-    color: "bg-purple-500/10 text-purple-500",
+    color: "bg-blue-500/10 text-blue-500",
     content: `# Meeting Notes - {{date}}
 
 ## Attendees
@@ -350,7 +350,7 @@ function TemplateCard({ template, onUse }: { template: Template; onUse: (t: Temp
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group rounded-xl border border-border bg-card/30 p-5 hover:bg-accent/30 hover:border-border/80 transition-all"
+      className="group rounded-lg border border-border bg-card p-4 hover:bg-accent/50 hover:border-border/80 transition-all"
     >
       <div className="flex items-start gap-3">
         <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg shrink-0", template.color)}>

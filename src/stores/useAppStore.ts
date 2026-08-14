@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Theme, AppSettings } from "@/types";
+import type { AppSettings } from "@/types";
 
 interface AppState {
   settings: AppSettings;
@@ -7,6 +7,7 @@ interface AppState {
   sidebarWidth: number;
   sidebarCollapsed: boolean;
   commandPaletteOpen: boolean;
+  quickSwitcherOpen: boolean;
   zenMode: boolean;
   focusMode: boolean;
   activeView: string;
@@ -22,6 +23,7 @@ interface AppState {
   setSidebarWidth: (width: number) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
+  setQuickSwitcherOpen: (open: boolean) => void;
   setZenMode: (zen: boolean) => void;
   setFocusMode: (focus: boolean) => void;
   setActiveView: (view: string) => void;
@@ -37,7 +39,7 @@ interface AppState {
 
 const defaultSettings: AppSettings = {
   theme: "dark",
-  accentColor: "263 70% 50%",
+  accentColor: "217 91% 60%",
   fontSize: 16,
   fontFamily: "Inter",
   lineHeight: 1.75,
@@ -69,12 +71,13 @@ const saveSettings = (settings: AppSettings) => {
   } catch {}
 };
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>((set) => ({
   settings: loadSettings(),
   sidebarOpen: true,
   sidebarWidth: 260,
   sidebarCollapsed: false,
   commandPaletteOpen: false,
+  quickSwitcherOpen: false,
   zenMode: false,
   focusMode: false,
   activeView: "notes",
@@ -97,6 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarWidth: (width) => set({ sidebarWidth: Math.max(200, Math.min(400, width)) }),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  setQuickSwitcherOpen: (open) => set({ quickSwitcherOpen: open }),
   setZenMode: (zen) => set({ zenMode: zen }),
   setFocusMode: (focus) => set({ focusMode: focus }),
   setActiveView: (view) => set({ activeView: view }),
