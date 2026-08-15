@@ -223,7 +223,7 @@ export function NoteEditor({
   return (
     <div className={cn("note-editor", className)}>
       {!readonly && (
-        <div className="mb-3 sticky top-0 z-10 bg-background/80 backdrop-blur-sm py-2">
+        <div className="mb-3 sticky top-0 z-10 -mx-2 bg-background px-2 py-1.5">
           <EditorToolbar editor={editor} />
         </div>
       )}

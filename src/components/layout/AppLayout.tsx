@@ -21,8 +21,6 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const sidebarOpen = useAppStore((s) => s.sidebarOpen);
-  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const zenMode = useAppStore((s) => s.zenMode);
   const focusMode = useAppStore((s) => s.focusMode);
   const commandPaletteOpen = useAppStore((s) => s.commandPaletteOpen);

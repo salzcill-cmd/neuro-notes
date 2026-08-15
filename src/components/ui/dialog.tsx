@@ -4,7 +4,6 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "./button";
 
 interface DialogProps {
   open: boolean;
@@ -79,7 +78,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       >
         {showClose && (
           <button
-            onClick={() => ctxOnOpenChange(false)}
+            onClick={() => (onClose ? onClose() : ctxOnOpenChange(false))}
             className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />

@@ -29,10 +29,17 @@ import type { Note } from "@/types";
 function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
   const setCurrentNote = useNoteStore((s) => s.setCurrentNote);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
+  const setFilterTag = useNoteStore((s) => s.setFilterTag);
   const toggleFavorite = useNoteStore((s) => s.toggleFavorite);
   const restoreFromTrash = useNoteStore((s) => s.restoreFromTrash);
   const deleteNote = useNoteStore((s) => s.deleteNote);
   const isTrash = note.isDeleted === true;
+
+  const handleTagClick = (e: React.MouseEvent, tagName: string) => {
+    e.stopPropagation();
+    setFilterTag(tagName);
+    useAppStore.getState().setActiveView("notes");
+  };
 
   const handleClick = () => {
     if (isTrash) return;
@@ -58,11 +65,11 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClick}
-        className="flex w-full items-center gap-3 rounded-md border border-border bg-card p-2.5 hover:bg-accent/50 hover:border-border/80 transition-all text-left group"
+        className="group flex w-full items-center gap-3 rounded-md px-2.5 py-2 hover:bg-accent/60 transition-colors text-left"
       >
         {note.color && note.color !== "transparent" ? (
           <span
-            className="h-3 w-3 shrink-0 rounded-full"
+            className="h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: note.color }}
           />
         ) : (
@@ -81,15 +88,19 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
             {note.plainText?.slice(0, 120) || "Empty note"}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           {note.tags.slice(0, 2).map((tag) => (
-            <Badge key={tag.id} variant="secondary" className="text-[10px]">
-              {tag.name}
-            </Badge>
+            <span
+              key={tag.id}
+              onClick={(e) => handleTagClick(e, tag.name)}
+              className="text-[10px] text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+            >
+              #{tag.name}
+            </span>
           ))}
-          <span className="text-xs text-muted-foreground">{formatDate(note.updatedAt)}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">{formatDate(note.updatedAt)}</span>
           {isTrash && (
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1.5 ml-1">
               <button onClick={handleRestore} className="text-xs text-primary hover:underline">Restore</button>
               <span className="text-muted-foreground">·</span>
               <button onClick={handlePermanentDelete} className="text-xs text-destructive hover:underline">Delete</button>
@@ -184,9 +195,11 @@ export function NotesView() {
   const setCurrentNote = useNoteStore((s) => s.setCurrentNote);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+  const filterTag = useNoteStore((s) => s.filterTag);
+  const setFilterTag = useNoteStore((s) => s.setFilterTag);
 
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">("list");
   const [sortOrder, setSortOrder] = React.useState<"desc" | "asc">("desc");
   const [tagManagerOpen, setTagManagerOpen] = React.useState(false);
 
@@ -196,6 +209,7 @@ export function NotesView() {
       if (activeView === "trash" && !n.isDeleted) return false;
       if (activeView === "favorites" && !n.isFavorite) return false;
       if (n.isArchived && activeView !== "archive") return false;
+      if (filterTag && !n.tags.some((t) => t.name === filterTag)) return false;
       return true;
     });
 
@@ -215,7 +229,7 @@ export function NotesView() {
     });
 
     return result;
-  }, [notes, activeView, searchQuery, sortOrder]);
+  }, [notes, activeView, searchQuery, sortOrder, filterTag]);
 
   const handleNewNote = () => {
     const now = new Date().toISOString();
@@ -262,6 +276,16 @@ export function NotesView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {filterTag && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilterTag(null)}
+              >
+                <Tag className="h-3.5 w-3.5 mr-1" />
+                #{filterTag} ×
+              </Button>
+            )}
             {activeView === "daily" && (
               <Button variant="outline" onClick={() => { openDailyNote(); }}>
                 <StickyNote className="h-4 w-4 mr-1" />

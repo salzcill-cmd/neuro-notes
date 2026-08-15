@@ -21,7 +21,7 @@ import {
   AlignCenter,
   AlignRight,
   Link,
-  Image,
+  Image as ImageIcon,
   Highlighter,
   Undo2,
   Redo2,
@@ -89,7 +89,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 rounded-lg border border-border bg-background/50 p-1 backdrop-blur-sm">
+    <div className="flex flex-wrap items-center gap-0.5 rounded-md border border-border bg-background p-1">
       <ToolbarButton
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().undo()}
@@ -258,7 +258,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         <Link className="h-3.5 w-3.5" />
       </ToolbarButton>
       <ToolbarButton onClick={addImage} tooltip="Add Image">
-        <Image className="h-3.5 w-3.5" />
+        <ImageIcon className="h-3.5 w-3.5" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() =>

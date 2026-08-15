@@ -20,6 +20,7 @@ const editorViews = ["notes", "favorites", "recent", "daily", "trash", "archive"
 export function MainContent() {
   const activeView = useAppStore((s) => s.activeView);
   const currentNoteId = useAppStore((s) => s.currentNoteId);
+  const reducedMotion = useAppStore((s) => s.settings.reducedMotion);
 
   let view: React.ReactNode;
   let key: string;
@@ -74,10 +75,10 @@ export function MainContent() {
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={key}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.18, ease: "easeOut" }}
+        initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+        animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+        transition={{ duration: reducedMotion ? 0.1 : 0.18, ease: "easeOut" }}
         className="h-full"
       >
         {view}

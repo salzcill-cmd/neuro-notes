@@ -10,10 +10,9 @@ import {
   Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNoteStore, useAppStore, useWorkspaceStore } from "@/stores";
-import { cn, generateId, formatDate } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 import type { Note } from "@/types";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

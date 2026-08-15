@@ -45,7 +45,7 @@ import { cn, formatDate, formatDateTime, calculateReadingTime, generateId } from
 import { htmlToMarkdown } from "@/lib/markdown";
 import type { Note } from "@/types";
 
-type PanelTab = "properties" | "backlinks" | "outgoing" | "history";
+type PanelTab = "outline" | "properties" | "backlinks" | "outgoing" | "history";
 type EditorMode = "edit" | "split" | "preview";
 
 const viewModes: { id: EditorMode; label: string; icon: React.ReactNode }[] = [
@@ -55,6 +55,7 @@ const viewModes: { id: EditorMode; label: string; icon: React.ReactNode }[] = [
 ];
 
 const panelTabs: { id: PanelTab; label: string }[] = [
+  { id: "outline", label: "Outline" },
   { id: "properties", label: "Properties" },
   { id: "backlinks", label: "Backlinks" },
   { id: "outgoing", label: "Outgoing" },
@@ -81,6 +82,7 @@ export function NoteEditorView() {
   const [tagInput, setTagInput] = React.useState("");
   const [linkQuery, setLinkQuery] = React.useState("");
   const [mode, setMode] = React.useState<EditorMode>(settings.defaultView);
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
 
   // Keep title + view mode in sync when switching notes (render-phase adjustment).
   const prevNoteIdRef = React.useRef(currentNote?.id);
@@ -113,6 +115,23 @@ export function NoteEditorView() {
     a.download = `${(currentNote?.title || "Untitled").replace(/[\\/:*?"<>|]/g, "-")}.md`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Outline: headings extracted from the note's HTML, in document order.
+  const outline = currentNote?.content
+    ? Array.from(
+        new DOMParser()
+          .parseFromString(currentNote.content, "text/html")
+          .querySelectorAll("h1,h2,h3,h4,h5,h6")
+      ).map((h) => ({
+        level: Number(h.tagName[1]),
+        text: (h.textContent || "").trim() || "Untitled",
+      }))
+    : [];
+
+  const filterByTag = (tagName: string) => {
+    useNoteStore.getState().setFilterTag(tagName);
+    useAppStore.getState().setActiveView("notes");
   };
 
   if (!currentNote) {
@@ -348,14 +367,14 @@ export function NoteEditorView() {
         {/* Content: Edit / Split / Preview */}
         {mode === "preview" ? (
           <ScrollArea className="flex-1">
-            <div className="max-w-3xl mx-auto px-8 py-6">
+            <div ref={contentRef} className="max-w-3xl mx-auto px-8 py-6">
               <NotePreview note={currentNote} onOpenNote={openNote} />
             </div>
           </ScrollArea>
         ) : mode === "split" ? (
           <div className="flex flex-1 overflow-hidden">
             <ScrollArea className="flex-1 md:border-r md:border-border">
-              <div className="max-w-3xl mx-auto px-8 py-6">
+              <div ref={contentRef} className="max-w-3xl mx-auto px-8 py-6">
                 <NoteEditor
                   key={currentNote.id}
                   noteId={currentNote.id}
@@ -372,7 +391,7 @@ export function NoteEditorView() {
           </div>
         ) : (
           <ScrollArea className="flex-1">
-            <div className="max-w-3xl mx-auto px-8 py-6">
+            <div ref={contentRef} className="max-w-3xl mx-auto px-8 py-6">
               <NoteEditor
                 key={currentNote.id}
                 noteId={currentNote.id}
@@ -391,20 +410,22 @@ export function NoteEditorView() {
           animate={{ width: 288, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="h-full border-l border-border bg-background/40 overflow-hidden shrink-0"
+          className="h-full border-l border-border bg-background overflow-hidden shrink-0"
         >
-          <div className="w-[288px] h-full flex flex-col">
+          <div className="w-[288px] h-full flex flex-col bg-background">
             {/* Tabs */}
             <div className="flex items-center border-b border-border px-2 pt-1.5 gap-1 shrink-0">
               {panelTabs.map((tab) => {
                 const count =
-                  tab.id === "backlinks"
-                    ? backlinks.length
-                    : tab.id === "outgoing"
-                      ? currentNote.links.length
-                      : tab.id === "history"
-                        ? snapshots.length
-                        : undefined;
+                  tab.id === "outline"
+                    ? outline.length
+                    : tab.id === "backlinks"
+                      ? backlinks.length
+                      : tab.id === "outgoing"
+                        ? currentNote.links.length
+                        : tab.id === "history"
+                          ? snapshots.length
+                          : undefined;
                 return (
                   <button
                     key={tab.id}
@@ -434,6 +455,10 @@ export function NoteEditorView() {
             </div>
 
             <ScrollArea className="flex-1 p-4">
+              {rightPanelTab === "outline" && (
+                <OutlineTab contentRef={contentRef} />
+              )}
+
               {rightPanelTab === "properties" && (
                 <div className="space-y-4">
                   <div>
@@ -474,11 +499,17 @@ export function NoteEditorView() {
                         <span className="text-xs text-muted-foreground">No tags yet</span>
                       ) : (
                         currentNote.tags.map((tag) => (
-                          <Badge key={tag.id} variant="secondary" className="text-xs gap-1">
+                          <Badge
+                            key={tag.id}
+                            variant="secondary"
+                            className="text-xs gap-1 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => filterByTag(tag.name)}
+                          >
                             <Tag className="h-3 w-3" />
                             {tag.name}
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const newTags = currentNote.tags.filter((t) => t.id !== tag.id);
                                 updateNote(currentNote.id, { tags: newTags });
                               }}
@@ -637,6 +668,63 @@ export function NoteEditorView() {
           </div>
         </motion.div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Outline (table of contents): lists the note's headings and scrolls the
+ * editor/preview to the selected one when clicked.
+ */
+function OutlineTab({ contentRef }: { contentRef: React.RefObject<HTMLDivElement | null> }) {
+  const currentNote = useNoteStore((s) => s.currentNote);
+
+  if (!currentNote) return null;
+  const doc = new DOMParser().parseFromString(currentNote.content, "text/html");
+  const headings = Array.from(doc.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+
+  if (headings.length === 0) {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          An outline of your note&apos;s headings will appear here.
+        </p>
+        <div className="rounded-lg border border-dashed border-border p-4 text-center">
+          <p className="text-xs text-muted-foreground">No headings yet. Use H1–H6 in the toolbar.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const scrollToHeading = (index: number) => {
+    const container = contentRef.current;
+    if (!container) return;
+    const els = container.querySelectorAll("h1,h2,h3,h4,h5,h6");
+    const target = els[index];
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  return (
+    <div className="space-y-0.5">
+      {headings.map((h, i) => {
+        const level = Number(h.tagName[1]);
+        return (
+          <button
+            key={`${i}-${h.textContent}`}
+            onClick={() => scrollToHeading(i)}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors"
+            style={{ paddingLeft: `${8 + (level - 1) * 12}px` }}
+          >
+            <span
+              className="shrink-0 rounded-sm bg-muted-foreground/30"
+              style={{ width: `${Math.max(8, 16 - (level - 1) * 2)}px`, height: 2 }}
+            />
+            <span className="truncate">{h.textContent?.trim() || "Untitled"}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

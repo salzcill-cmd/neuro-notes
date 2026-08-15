@@ -10,7 +10,6 @@ import {
   FolderOpen,
   Folder,
   ChevronRight,
-  ChevronDown,
   Plus,
   Hash,
   Calendar,
@@ -31,15 +30,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 import { useAppStore, useNoteStore, useWorkspaceStore, useTagStore, useTaskStore } from "@/stores";
-import { cn, generateId, formatDate } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 import type { Note, Folder as FolderType } from "@/types";
 
 interface SidebarSectionProps {
@@ -245,11 +237,8 @@ function NoteItem({ note, onNavigate }: { note: Note; onNavigate?: () => void })
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const sidebarWidth = useAppStore((s) => s.sidebarWidth);
-  const setSidebarWidth = useAppStore((s) => s.setSidebarWidth);
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useAppStore((s) => s.setSidebarCollapsed);
-  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
-  const currentNoteId = useAppStore((s) => s.currentNoteId);
   const activeView = useAppStore((s) => s.activeView);
   const setActiveView = useAppStore((s) => s.setActiveView);
   const setCurrentNoteId = useAppStore((s) => s.setCurrentNoteId);
@@ -260,7 +249,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const filterTag = useNoteStore((s) => s.filterTag);
   const setFilterTag = useNoteStore((s) => s.setFilterTag);
 
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const folders = useWorkspaceStore((s) => s.folders);
   const addFolder = useWorkspaceStore((s) => s.addFolder);
@@ -269,7 +257,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const tasks = useTaskStore((s) => s.tasks);
 
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [isResizing, setIsResizing] = React.useState(false);
 
   const activeNotes = notes.filter((n) => !n.isDeleted && !n.isArchived);
   const recentNotes = [...activeNotes]

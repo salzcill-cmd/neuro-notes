@@ -18,7 +18,10 @@ export function useAutoSave({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedDataRef = useRef(data);
   const onSaveRef = useRef(onSave);
-  onSaveRef.current = onSave;
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const save = useCallback(() => {
     if (timeoutRef.current) {

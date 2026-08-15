@@ -35,10 +35,10 @@ export function TabBar() {
               <div
                 key={noteId}
                 className={cn(
-                  "group flex h-6 items-center gap-1.5 rounded-md px-2 text-xs cursor-pointer border border-transparent transition-colors",
+                  "group relative flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs cursor-pointer transition-colors",
                   isActive
-                    ? "bg-accent text-accent-foreground border-border"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    ? "bg-accent/70 text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
                 )}
                 onClick={() => handleSelect(noteId)}
               >
@@ -56,7 +56,7 @@ export function TabBar() {
                     e.stopPropagation();
                     closeTab(noteId);
                   }}
-                  className="ml-0.5 rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-background/60 transition-opacity"
+                  className="ml-0.5 rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-background/80 transition-opacity"
                   aria-label={`Close ${note.title}`}
                 >
                   <X className="h-2.5 w-2.5" />

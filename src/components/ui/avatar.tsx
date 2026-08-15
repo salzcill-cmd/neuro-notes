@@ -29,6 +29,7 @@ function Avatar({ src, alt, fallback, size = "md", className, ...props }: Avatar
       {...props}
     >
       {src && !error ? (
+        // eslint-disable-next-line @next/next/no-img-element -- dynamic user avatar source
         <img
           src={src}
           alt={alt || ""}

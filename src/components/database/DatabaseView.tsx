@@ -5,26 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Table,
-  LayoutGrid,
   List,
-  Filter,
   ArrowUpDown,
   Trash2,
   Search,
-  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { useNoteStore, useUIStore } from "@/stores";
-import { cn, generateId, formatDate } from "@/lib/utils";
+import { useUIStore } from "@/stores";
+import { generateId } from "@/lib/utils";
 
 interface DatabaseColumn {
   id: string;

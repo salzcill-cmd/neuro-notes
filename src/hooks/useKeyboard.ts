@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 interface KeyBinding {
   key: string;
@@ -16,7 +16,10 @@ interface KeyBinding {
 
 export function useKeyboard(bindings: KeyBinding[], deps: unknown[] = []) {
   const bindingsRef = useRef(bindings);
-  bindingsRef.current = bindings;
+
+  useEffect(() => {
+    bindingsRef.current = bindings;
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -39,6 +42,8 @@ export function useKeyboard(bindings: KeyBinding[], deps: unknown[] = []) {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+    // deps is intentionally dynamic (caller-supplied); the handler reads latest bindings via ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 
@@ -50,9 +55,12 @@ export function useKeyCombo(
   const keysRef = useRef(keys);
   const actionRef = useRef(action);
   const optionsRef = useRef(options);
-  keysRef.current = keys;
-  actionRef.current = action;
-  optionsRef.current = options;
+
+  useEffect(() => {
+    keysRef.current = keys;
+    actionRef.current = action;
+    optionsRef.current = options;
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -80,7 +88,10 @@ export function useHotkey(
   options?: { ctrl?: boolean; meta?: boolean; shift?: boolean; alt?: boolean }
 ) {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

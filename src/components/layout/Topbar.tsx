@@ -81,8 +81,8 @@ export function Topbar() {
       <button
         onClick={() => setCommandPaletteOpen(true)}
         className={cn(
-          "flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5",
-          "text-[13px] text-muted-foreground hover:bg-muted transition-colors",
+          "flex items-center gap-2 rounded-md border border-transparent px-2.5 py-1.5",
+          "text-[13px] text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
           "w-full max-w-sm"
         )}
       >

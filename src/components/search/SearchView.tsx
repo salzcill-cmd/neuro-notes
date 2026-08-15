@@ -7,20 +7,15 @@ import {
   FileText,
   Star,
   Clock,
-  Tag,
-  Filter,
   X,
   ArrowRight,
   Hash,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useNoteStore, useAppStore, useTagStore } from "@/stores";
 import { cn, formatDate, calculateReadingTime } from "@/lib/utils";
-import type { Note } from "@/types";
 
 type SortOption = "relevance" | "date" | "title";
 type FilterOption = "all" | "favorites" | "recent" | "archived";

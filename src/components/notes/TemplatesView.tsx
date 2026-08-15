@@ -9,13 +9,11 @@ import {
   BookOpen,
   CheckSquare,
   Code,
-  PenTool,
   Lightbulb,
   GraduationCap,
   Briefcase,
   Search,
   ArrowRight,
-  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

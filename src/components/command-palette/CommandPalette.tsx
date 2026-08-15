@@ -20,13 +20,12 @@ import {
   Star,
   Trash2,
   FolderOpen,
-  Hash,
   Command,
   ArrowRight,
   Archive,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppStore, useNoteStore, useWorkspaceStore, useUIStore } from "@/stores";
+import { useAppStore, useNoteStore, useWorkspaceStore } from "@/stores";
 import { cn, generateId } from "@/lib/utils";
 import { openDailyNote } from "@/lib/dailyNote";
 
@@ -78,7 +77,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const addNote = useNoteStore((s) => s.addNote);
   const setCurrentNote = useNoteStore((s) => s.setCurrentNote);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
-  const showToast = useUIStore((s) => s.showToast);
 
   const commands: Command[] = React.useMemo(() => {
     const noteCommands: Command[] = notes

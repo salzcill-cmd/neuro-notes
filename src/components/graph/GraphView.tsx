@@ -208,7 +208,7 @@ export function GraphView() {
       setNodes(graphNodes);
       setEdges(graphEdges);
     }
-  });
+  }, [dataKey, graphNodes, graphEdges]);
 
   const onNodeClick = React.useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -228,7 +228,7 @@ export function GraphView() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 rounded-xl border border-border bg-background/80 backdrop-blur-md p-2"
+          className="flex items-center gap-2 rounded-md border border-border bg-background p-1.5 shadow-sm"
         >
           <h3 className="text-sm font-semibold px-2">Knowledge Graph</h3>
           <Badge variant="secondary" className="text-xs">
@@ -245,7 +245,7 @@ export function GraphView() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-1 rounded-xl border border-border bg-background/80 backdrop-blur-md p-1"
+          className="flex items-center gap-1 rounded-md border border-border bg-background p-1 shadow-sm"
         >
           <Tooltip content="Filter by tag">
             <Button
@@ -348,7 +348,7 @@ export function GraphView() {
           className="opacity-10"
         />
         <Controls
-          className="!rounded-lg !border-border !bg-background/80 !backdrop-blur-md"
+          className="!rounded-md !border-border !bg-background"
           showInteractive={false}
         />
         <MiniMap

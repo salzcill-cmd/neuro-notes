@@ -103,8 +103,6 @@ export function DashboardView() {
   const completedTasks = tasks.filter((t) => t.status === "done");
 
   const today = new Date();
-  const greeting =
-    today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
 
   const handleNewNote = () => {
     const now = new Date().toISOString();
@@ -145,17 +143,21 @@ export function DashboardView() {
   return (
     <ScrollArea className="h-full">
       <div className="mx-auto max-w-6xl space-y-4 p-5">
-        {/* Welcome */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="space-y-0.5"
+          className="flex items-end justify-between gap-4"
         >
-          <h1 className="text-2xl font-bold tracking-tight">{greeting}</h1>
-          <p className="text-[13px] text-muted-foreground">
-            {activeNotes.length} notes · {pendingTasks.length} pending tasks · {totalWords.toLocaleString()} words
-          </p>
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-bold tracking-tight">
+              {today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </h1>
+            <p className="text-[13px] text-muted-foreground">
+              {activeNotes.length} notes · {pendingTasks.length} pending tasks · {totalWords.toLocaleString()} words
+            </p>
+          </div>
         </motion.div>
 
         {/* Quick Actions */}

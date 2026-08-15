@@ -3,7 +3,6 @@
 import * as React from "react";
 import { motion } from "framer-motion";
 import {
-  Plus,
   StickyNote,
   Type,
   Trash2,
@@ -17,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { useAppStore, useNoteStore, useUIStore } from "@/stores";
 import { cn, generateId } from "@/lib/utils";
 
 interface CanvasCard {
@@ -185,7 +183,7 @@ export function CanvasView() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-1 rounded-xl border border-border bg-background/90 backdrop-blur-md p-1.5 shadow-lg"
+          className="flex items-center gap-1 rounded-md border border-border bg-background p-1 shadow-sm"
         >
           <Tooltip content="Select (V)">
             <Button
@@ -323,7 +321,7 @@ export function CanvasView() {
                     e.stopPropagation();
                     handleDeleteCard(card.id);
                   }}
-                  className="h-6 w-6 rounded-md bg-background/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-background transition-colors"
+                  className="h-6 w-6 rounded-md bg-background flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -331,7 +329,7 @@ export function CanvasView() {
 
               {/* Color Picker */}
               {selectedCard === card.id && (
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1 bg-background/90 backdrop-blur-sm rounded-lg p-1 border border-border shadow-lg">
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1 bg-popover rounded-md p-1 border border-border shadow-md">
                   {cardColors.map((color) => (
                     <button
                       key={color.value}
