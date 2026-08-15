@@ -76,7 +76,12 @@ export function NoteEditorView() {
   const setRightPanelTab = useUIStore((s) => s.setRightPanelTab);
   const showToast = useUIStore((s) => s.showToast);
   const settings = useAppStore((s) => s.settings);
-  const snapshots = useHistoryStore((s) => s.snapshots[currentNote?.id || ""] || []);
+  // Select the whole snapshots record (stable reference) and derive the
+  // per-note list outside the selector — a fresh `[]` inside the selector
+  // breaks React 19's useSyncExternalStore snapshot caching and triggers
+  // "Maximum update depth exceeded" on render.
+  const allSnapshots = useHistoryStore((s) => s.snapshots);
+  const snapshots = allSnapshots[currentNote?.id || ""] || [];
 
   const [title, setTitle] = React.useState(currentNote?.title || "Untitled");
   const [tagInput, setTagInput] = React.useState("");
