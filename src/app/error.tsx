@@ -46,6 +46,11 @@ export default function GlobalError({
           {error.message}
         </p>
       )}
+      {error?.stack && (
+        <pre className="max-h-48 max-w-2xl overflow-auto rounded-md border border-border bg-muted/40 px-3 py-2 text-left font-mono text-[10px] leading-relaxed text-muted-foreground">
+          {error.stack}
+        </pre>
+      )}
       <div className="flex gap-2">
         <button
           onClick={() => reset()}
