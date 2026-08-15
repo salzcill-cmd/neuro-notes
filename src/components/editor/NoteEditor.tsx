@@ -22,8 +22,10 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { EditorToolbar } from "./EditorToolbar";
 import { WikiLink } from "./extensions/WikiLink";
+import { Callout } from "./extensions/Callout";
+import { InlineTag } from "./extensions/InlineTag";
 import { WikiLinkPreview } from "./WikiLinkPreview";
-import { useNoteStore, useAppStore } from "@/stores";
+import { useNoteStore, useAppStore, useTagStore } from "@/stores";
 import { useHistoryStore } from "@/stores/useHistoryStore";
 import { useAutoSave } from "@/hooks";
 import { cn, convertWikiLinksToHtml, generateId } from "@/lib/utils";
@@ -42,6 +44,68 @@ interface WikiPreview {
   note: Note | null;
   x: number;
   y: number;
+}
+
+/**
+ * Extract `#tagname` tokens from plain text (excluding headings, which
+ * ProseMirror doesn't include the `#` for, and code blocks aren't in text
+ * either — good enough for the common case).
+ */
+function extractTagsFromText(text: string): string[] {
+  const tags = new Set<string>();
+  const re = /(?:^|\s)(#[\p{L}\p{N}_/-]+)/gu;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    const name = m[1].slice(1).trim();
+    if (name && !name.startsWith("#")) tags.add(name);
+  }
+  return Array.from(tags);
+}
+
+/**
+ * Keep the note's `tags` array in sync with inline `#tags` typed in the
+ * editor. Existing tags keep their id/color; new ones are added (and also
+ * registered in the global tag store so the sidebar tag list stays fresh).
+ */
+function syncInlineTags(noteId: string, text: string) {
+  const store = useNoteStore.getState();
+  const note = store.notes.find((n) => n.id === noteId);
+  if (!note) return;
+
+  const wanted = new Set(extractTagsFromText(text));
+  const existing = new Map(note.tags.map((t) => [t.name.toLowerCase(), t]));
+
+  // Tags removed from the text disappear from the note.
+  const merged = note.tags.filter((t) => wanted.has(t.name.toLowerCase()));
+
+  // Add tags that are new.
+  for (const name of wanted) {
+    if (!existing.has(name.toLowerCase())) {
+      merged.push({
+        id: generateId(),
+        name,
+        parentId: null,
+        workspaceId: note.workspaceId,
+        createdAt: new Date().toISOString(),
+      });
+      // Register in the global tag store if not present (keeps sidebar fresh).
+      const tagStore = useTagStore.getState();
+      if (!tagStore.getTagByName(name)) {
+        tagStore.addTag({
+          name,
+          parentId: null,
+          workspaceId: note.workspaceId,
+        });
+      }
+    }
+  }
+
+  const same =
+    merged.length === note.tags.length &&
+    merged.every((t, i) => t.name === note.tags[i].name);
+  if (!same) {
+    store.updateNote(noteId, { tags: merged });
+  }
 }
 
 export function NoteEditor({
@@ -74,6 +138,8 @@ export function NoteEditor({
       }),
       Placeholder.configure({ placeholder }),
       WikiLink,
+      Callout,
+      InlineTag,
       TaskList,
       TaskItem.configure({ nested: true }),
       LinkExtension.configure({
@@ -104,6 +170,7 @@ export function NoteEditor({
         const store = useNoteStore.getState();
         store.updateNote(noteId, { content: html, plainText: text });
         store.syncLinks(noteId);
+        syncInlineTags(noteId, text);
         // Auto version snapshots (throttled inside the store).
         useHistoryStore.getState().addSnapshot(noteId, html, text);
       }
@@ -168,17 +235,26 @@ export function NoteEditor({
 
   const handleEditorClick = (e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>("span[data-wikilink]");
-    if (!el) {
-      setPreview(null);
+    if (el) {
+      const title = el.getAttribute("data-wikilink") || "";
+      const note =
+        notes.find(
+          (n) => !n.isDeleted && n.title.toLowerCase() === title.toLowerCase()
+        ) || null;
+      const rect = el.getBoundingClientRect();
+      setPreview({ title, note, x: rect.left, y: rect.bottom + 8 });
       return;
     }
-    const title = el.getAttribute("data-wikilink") || "";
-    const note =
-      notes.find(
-        (n) => !n.isDeleted && n.title.toLowerCase() === title.toLowerCase()
-      ) || null;
-    const rect = el.getBoundingClientRect();
-    setPreview({ title, note, x: rect.left, y: rect.bottom + 8 });
+
+    // Clicking an inline #tag filters the vault to that tag.
+    const tagEl = (e.target as HTMLElement).closest<HTMLElement>("span[data-tag]");
+    if (tagEl) {
+      const tagName = tagEl.getAttribute("data-tag") || "";
+      if (tagName) {
+        useNoteStore.getState().setFilterTag(tagName);
+        useAppStore.getState().setActiveView("notes");
+      }
+    }
   };
 
   const handleOpenNote = (note: Note) => {

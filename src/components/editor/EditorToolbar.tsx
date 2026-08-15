@@ -28,6 +28,7 @@ import {
   Table,
   RemoveFormatting,
   Type,
+  MessageSquareQuote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -213,6 +214,23 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         tooltip="Blockquote"
       >
         <Quote className="h-3.5 w-3.5" />
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: "callout",
+              attrs: { type: "note" },
+              content: [{ type: "paragraph" }],
+            })
+            .run()
+        }
+        active={editor.isActive("callout")}
+        tooltip="Callout"
+      >
+        <MessageSquareQuote className="h-3.5 w-3.5" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}

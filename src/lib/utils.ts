@@ -6,7 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function generateId(): string {
-  return crypto.randomUUID();
+  // crypto.randomUUID is only available in secure contexts (https / localhost).
+  // Fall back to a timestamp+random combo so the app never crashes on
+  // plain-http deployments.
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function formatDate(date: Date | string): string {

@@ -28,7 +28,25 @@ const loadHistory = (): Record<string, NoteSnapshot[]> => {
   if (typeof window === "undefined") return {};
   try {
     const stored = localStorage.getItem("neuronotes-history");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (typeof parsed !== "object" || parsed === null) return {};
+      // Normalize older saved data so missing fields never crash the UI.
+      const result: Record<string, NoteSnapshot[]> = {};
+      for (const [noteId, list] of Object.entries(parsed)) {
+        if (!Array.isArray(list)) continue;
+        result[noteId] = list.map((s) => ({
+          id: s.id ?? generateId(),
+          noteId: s.noteId ?? noteId,
+          title: s.title ?? "Untitled",
+          content: s.content ?? "",
+          plainText: s.plainText ?? "",
+          wordCount: s.wordCount ?? 0,
+          createdAt: s.createdAt ?? new Date().toISOString(),
+        }));
+      }
+      return result;
+    }
   } catch {}
   return {};
 };

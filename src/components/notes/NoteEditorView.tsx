@@ -846,12 +846,23 @@ function NotePreview({ note, onOpenNote }: { note: Note; onOpenNote: (note: Note
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>("span[data-wikilink]");
-    if (!el) return;
-    const title = el.getAttribute("data-wikilink") || "";
-    const target = useNoteStore
-      .getState()
-      .notes.find((n) => !n.isDeleted && n.title.toLowerCase() === title.toLowerCase());
-    if (target) onOpenNote(target);
+    if (el) {
+      const title = el.getAttribute("data-wikilink") || "";
+      const target = useNoteStore
+        .getState()
+        .notes.find((n) => !n.isDeleted && n.title.toLowerCase() === title.toLowerCase());
+      if (target) onOpenNote(target);
+      return;
+    }
+    // Clicking an inline #tag filters the vault to that tag.
+    const tagEl = (e.target as HTMLElement).closest<HTMLElement>("span[data-tag]");
+    if (tagEl) {
+      const tagName = tagEl.getAttribute("data-tag") || "";
+      if (tagName) {
+        useNoteStore.getState().setFilterTag(tagName);
+        useAppStore.getState().setActiveView("notes");
+      }
+    }
   };
 
   if (!note.content.trim()) {

@@ -25,7 +25,28 @@ const loadTasks = (): Task[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem("neuronotes-tasks");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      // Normalize older saved data so missing fields never crash the UI.
+      return parsed.map((t) => ({
+        id: t.id ?? generateId(),
+        title: t.title ?? "Untitled task",
+        description: t.description,
+        status: t.status ?? "todo",
+        priority: t.priority ?? "none",
+        noteId: t.noteId,
+        workspaceId: t.workspaceId ?? "default",
+        dueDate: t.dueDate,
+        reminder: t.reminder,
+        isRecurring: !!t.isRecurring,
+        recurringPattern: t.recurringPattern,
+        tags: Array.isArray(t.tags) ? t.tags : [],
+        subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
+        createdAt: t.createdAt ?? new Date().toISOString(),
+        updatedAt: t.updatedAt ?? new Date().toISOString(),
+      }));
+    }
   } catch {}
   return [];
 };

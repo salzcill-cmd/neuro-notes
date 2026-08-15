@@ -65,7 +65,12 @@ function NoteCard({ note, view }: { note: Note; view: "grid" | "list" }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClick}
-        className="group flex w-full items-center gap-3 rounded-md px-2.5 py-2 hover:bg-accent/60 transition-colors text-left"
+        draggable
+        onDragStartCapture={(e: React.DragEvent) => {
+          e.dataTransfer.setData("application/x-note-id", note.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        className="group flex w-full items-center gap-3 rounded-md px-2.5 py-2 hover:bg-accent/60 transition-colors text-left cursor-grab active:cursor-grabbing"
       >
         {note.color && note.color !== "transparent" ? (
           <span

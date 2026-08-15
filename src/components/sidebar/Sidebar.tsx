@@ -129,12 +129,16 @@ function FolderItem({
   onNavigate,
   onRequestDelete,
   onRequestNewSubfolder,
+  onDropNote,
+  onDropFolder,
 }: {
   folder: FolderType;
   level?: number;
   onNavigate?: () => void;
   onRequestDelete?: (folder: FolderType) => void;
   onRequestNewSubfolder?: (folder: FolderType) => void;
+  onDropNote?: (noteId: string, folderId: string) => void;
+  onDropFolder?: (draggedId: string, targetId: string) => void;
 }) {
   const expandedFolders = useAppStore((s) => s.expandedFolders);
   const toggleFolder = useAppStore((s) => s.toggleFolder);
@@ -149,6 +153,7 @@ function FolderItem({
 
   const [renaming, setRenaming] = React.useState(false);
   const [renameValue, setRenameValue] = React.useState(folder.name);
+  const [dragOver, setDragOver] = React.useState(false);
   const renameInputRef = React.useRef<HTMLInputElement>(null);
 
   const subFolders = folders.filter((f) => f.parentId === folder.id);
@@ -169,6 +174,32 @@ function FolderItem({
       setRenameValue(folder.name);
     }
     setRenaming(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("application/x-note-id") &&
+        !e.dataTransfer.types.includes("application/x-folder-id")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const noteId = e.dataTransfer.getData("application/x-note-id");
+    const folderId = e.dataTransfer.getData("application/x-folder-id");
+    if (noteId) {
+      onDropNote?.(noteId, folder.id);
+    } else if (folderId && folderId !== folder.id) {
+      onDropFolder?.(folderId, folder.id);
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -212,11 +243,15 @@ function FolderItem({
           onNavigate?.();
         }}
         onContextMenu={handleContextMenu}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={cn(
           "group flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-all",
           "hover:bg-accent/50",
           isActive && "bg-accent text-accent-foreground",
-          !isActive && "text-muted-foreground hover:text-foreground"
+          dragOver && "bg-primary/15 ring-1 ring-primary",
+          !isActive && !dragOver && "text-muted-foreground hover:text-foreground"
         )}
         style={{ paddingLeft: `${8 + level * 12}px` }}
       >
@@ -282,6 +317,8 @@ function FolderItem({
                 onNavigate={onNavigate}
                 onRequestDelete={onRequestDelete}
                 onRequestNewSubfolder={onRequestNewSubfolder}
+                onDropNote={onDropNote}
+                onDropFolder={onDropFolder}
               />
             ))}
           </motion.div>
@@ -308,9 +345,15 @@ function NoteItem({ note, onNavigate }: { note: Note; onNavigate?: () => void })
   return (
     <button
       onClick={handleClick}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("application/x-note-id", note.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       className={cn(
         "group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-all",
         "hover:bg-accent/50",
+        "cursor-grab active:cursor-grabbing",
         isActive && "bg-accent text-accent-foreground font-medium",
         !isActive && "text-muted-foreground hover:text-foreground"
       )}
@@ -356,8 +399,54 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const tags = useTagStore((s) => s.tags);
   const tasks = useTaskStore((s) => s.tasks);
   const deleteFolder = useWorkspaceStore((s) => s.deleteFolder);
+  const updateFolder = useWorkspaceStore((s) => s.updateFolder);
   const updateNote = useNoteStore((s) => s.updateNote);
   const showToast = useUIStore((s) => s.showToast);
+
+  // Drag & drop: note onto folder (or root) moves it; folder onto folder nests it.
+
+  /** Collect a folder and all of its descendants (recursively). */
+  const collectFolderTree = (id: string): string[] => {
+    const ids = [id];
+    for (const f of folders) {
+      if (f.parentId === id) {
+        ids.push(...collectFolderTree(f.id));
+      }
+    }
+    return ids;
+  };
+
+  const handleDropNote = (noteId: string, folderId: string | null) => {
+    updateNote(noteId, { folderId });
+    const note = notes.find((n) => n.id === noteId);
+    const folder = folders.find((f) => f.id === folderId);
+    showToast(
+      `Moved "${note?.title || "Note"}" to ${folder ? folder.name : "root"}`,
+      "success"
+    );
+  };
+
+  const handleDropFolder = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+    // Prevent creating cycles: a folder can't be nested inside its own subtree.
+    const descendants = collectFolderTree(draggedId);
+    if (descendants.includes(targetId)) return;
+    updateFolder(draggedId, { parentId: targetId });
+    useAppStore.getState().toggleFolder(targetId);
+  };
+
+  const handleRootDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/x-note-id")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleRootDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const noteId = e.dataTransfer.getData("application/x-note-id");
+    if (noteId) handleDropNote(noteId, null);
+  };
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [deleteTarget, setDeleteTarget] = React.useState<FolderType | null>(null);
@@ -402,17 +491,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       parentId: null,
       workspaceId: currentWorkspace?.id || "default",
     });
-  };
-
-  /** Collect a folder and all of its descendants (recursively). */
-  const collectFolderTree = (id: string): string[] => {
-    const ids = [id];
-    for (const f of folders) {
-      if (f.parentId === id) {
-        ids.push(...collectFolderTree(f.id));
-      }
-    }
-    return ids;
   };
 
   const handleNewSubfolder = (parent: FolderType) => {
@@ -568,15 +646,24 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   onNavigate={onNavigate}
                   onRequestDelete={setDeleteTarget}
                   onRequestNewSubfolder={handleNewSubfolder}
+                  onDropNote={handleDropNote}
+                  onDropFolder={handleDropFolder}
                 />
               ))}
-              <button
-                onClick={handleNewFolder}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              {/* Drop zone: dragging a note here unfiles it (moves to root). */}
+              <div
+                onDragOver={handleRootDragOver}
+                onDrop={handleRootDrop}
+                className="rounded-md px-2 py-0.5"
               >
-                <Plus className="h-3.5 w-3.5" />
-                New Folder
-              </button>
+                <button
+                  onClick={handleNewFolder}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New Folder
+                </button>
+              </div>
             </SidebarSection>
 
             <Separator className="my-2" />

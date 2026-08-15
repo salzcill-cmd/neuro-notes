@@ -263,6 +263,32 @@
   opacity: 0.8;
 }
 
+/* ============ INLINE TAGS (#tag pills) ============ */
+.note-editor .ProseMirror .inline-tag {
+  color: var(--primary);
+  text-decoration: none;
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
+  border-radius: 0.25em;
+  padding: 0.02em 0.3em;
+  margin: 0 0.05em;
+  font-size: 0.92em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.note-editor .ProseMirror .inline-tag:hover {
+  background: color-mix(in oklab, var(--primary) 15%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 32%, transparent);
+}
+
+.note-editor .ProseMirror .inline-tag.ProseMirror-selectednode {
+  outline: 1.5px solid var(--primary);
+  outline-offset: 1px;
+}
+
 /* ============ WIKI LINKS (clickable [[...]] pills) ============ */
 .note-editor .ProseMirror .wiki-link {
   color: var(--primary);
@@ -373,8 +399,26 @@
   padding: 0.8em 1em;
   margin-top: 0.8em;
   margin-bottom: 0.8em;
+}
+
+.note-editor .ProseMirror .callout .callout-title {
+  font-weight: 600;
+  font-size: 0.95em;
+  margin-bottom: 0.35em;
   display: flex;
-  gap: 0.75em;
+  align-items: center;
+  gap: 0.4em;
+  text-transform: capitalize;
+}
+
+.note-editor .ProseMirror .callout .callout-title::before {
+  content: "▸";
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.note-editor .ProseMirror .callout .callout-content > *:first-child {
+  margin-top: 0;
 }
 
 .note-editor .ProseMirror .callout-info {

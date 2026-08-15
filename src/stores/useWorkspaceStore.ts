@@ -25,7 +25,20 @@ const loadWorkspaces = (): Workspace[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem("neuronotes-workspaces");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      // Normalize older saved data so missing fields never crash the UI.
+      return parsed.map((w) => ({
+        id: w.id ?? generateId(),
+        name: w.name ?? "Default",
+        description: w.description,
+        icon: w.icon,
+        color: w.color,
+        createdAt: w.createdAt ?? new Date().toISOString(),
+        updatedAt: w.updatedAt ?? new Date().toISOString(),
+      }));
+    }
   } catch {}
   return [];
 };
@@ -34,7 +47,21 @@ const loadFolders = (): Folder[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem("neuronotes-folders");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      // Normalize older saved data so missing fields never crash the UI.
+      return parsed.map((f) => ({
+        id: f.id ?? generateId(),
+        name: f.name ?? "New Folder",
+        parentId: f.parentId ?? null,
+        workspaceId: f.workspaceId ?? "default",
+        icon: f.icon,
+        color: f.color,
+        createdAt: f.createdAt ?? new Date().toISOString(),
+        updatedAt: f.updatedAt ?? new Date().toISOString(),
+      }));
+    }
   } catch {}
   return [];
 };

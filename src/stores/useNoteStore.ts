@@ -43,7 +43,34 @@ const loadNotes = (): Note[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem("neuronotes-notes");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      // Normalize older saved data: ensure every note has the fields the UI
+      // relies on, so notes saved before a feature landed don't crash the app
+      // on load ("This page couldn't load").
+      return parsed.map((n) => ({
+        id: n.id ?? generateId(),
+        title: n.title ?? "Untitled",
+        content: n.content ?? "",
+        plainText: n.plainText ?? "",
+        folderId: n.folderId ?? null,
+        workspaceId: n.workspaceId ?? "default",
+        isPinned: !!n.isPinned,
+        isFavorite: !!n.isFavorite,
+        isArchived: !!n.isArchived,
+        isDeleted: !!n.isDeleted,
+        color: n.color,
+        icon: n.icon,
+        coverImage: n.coverImage,
+        tags: Array.isArray(n.tags) ? n.tags : [],
+        backlinks: Array.isArray(n.backlinks) ? n.backlinks : [],
+        links: Array.isArray(n.links) ? n.links : [],
+        createdAt: n.createdAt ?? new Date().toISOString(),
+        updatedAt: n.updatedAt ?? new Date().toISOString(),
+        deletedAt: n.deletedAt,
+      }));
+    }
   } catch {}
   return [];
 };

@@ -22,7 +22,19 @@ const loadTags = (): Tag[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem("neuronotes-tags");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      // Normalize older saved data (missing fields -> safe defaults).
+      return parsed.map((t) => ({
+        id: t.id ?? generateId(),
+        name: t.name ?? "untitled",
+        color: t.color,
+        parentId: t.parentId ?? null,
+        workspaceId: t.workspaceId ?? "default",
+        createdAt: t.createdAt ?? new Date().toISOString(),
+      }));
+    }
   } catch {}
   return [];
 };
