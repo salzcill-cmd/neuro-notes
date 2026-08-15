@@ -10,6 +10,7 @@ import { StatusBar } from "@/components/layout/StatusBar";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { QuickSwitcher } from "@/components/command-palette/QuickSwitcher";
 import { ToastContainer } from "@/components/ui/toast";
+import { ContextMenu } from "@/components/ui/context-menu";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { useAppStore, useNoteStore } from "@/stores";
 import { useMediaQuery } from "@/hooks";
@@ -166,6 +167,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <QuickSwitcher open={quickSwitcherOpen} onOpenChange={setQuickSwitcherOpen} />
 
           <ToastContainer />
+          <ContextMenu />
         </div>
       </MotionConfig>
     </ThemeProvider>

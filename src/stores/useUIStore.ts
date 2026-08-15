@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type * as React from "react";
 
 interface ModalState {
   type: string | null;
@@ -23,9 +24,9 @@ interface UIState {
 }
 
 interface ContextMenuItem {
-  label: string;
-  icon?: string;
-  action: () => void;
+  label?: string;
+  icon?: React.ReactNode;
+  action?: () => void;
   shortcut?: string;
   danger?: boolean;
   separator?: boolean;

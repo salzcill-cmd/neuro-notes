@@ -24,13 +24,23 @@ import {
   PanelLeftClose,
   StickyNote,
   Archive,
+  PenLine,
+  FolderPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { useAppStore, useNoteStore, useWorkspaceStore, useTagStore, useTaskStore } from "@/stores";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useAppStore, useNoteStore, useWorkspaceStore, useTagStore, useTaskStore, useUIStore } from "@/stores";
 import { cn, generateId } from "@/lib/utils";
 import type { Note, Folder as FolderType } from "@/types";
 
@@ -117,31 +127,91 @@ function FolderItem({
   folder,
   level = 0,
   onNavigate,
+  onRequestDelete,
+  onRequestNewSubfolder,
 }: {
   folder: FolderType;
   level?: number;
   onNavigate?: () => void;
+  onRequestDelete?: (folder: FolderType) => void;
+  onRequestNewSubfolder?: (folder: FolderType) => void;
 }) {
   const expandedFolders = useAppStore((s) => s.expandedFolders);
   const toggleFolder = useAppStore((s) => s.toggleFolder);
   const currentFolderId = useAppStore((s) => s.currentFolderId);
   const setCurrentFolderId = useAppStore((s) => s.setCurrentFolderId);
+  const updateFolder = useWorkspaceStore((s) => s.updateFolder);
+  const setContextMenu = useUIStore((s) => s.setContextMenu);
   const notes = useNoteStore((s) => s.notes);
   const folders = useWorkspaceStore((s) => s.folders);
   const expanded = expandedFolders.has(folder.id);
   const isActive = currentFolderId === folder.id;
 
+  const [renaming, setRenaming] = React.useState(false);
+  const [renameValue, setRenameValue] = React.useState(folder.name);
+  const renameInputRef = React.useRef<HTMLInputElement>(null);
+
   const subFolders = folders.filter((f) => f.parentId === folder.id);
   const noteCount = notes.filter((n) => n.folderId === folder.id && !n.isDeleted).length;
+
+  React.useEffect(() => {
+    if (renaming) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }
+  }, [renaming]);
+
+  const commitRename = () => {
+    const name = renameValue.trim();
+    if (name && name !== folder.name) {
+      updateFolder(folder.id, { name });
+    } else {
+      setRenameValue(folder.name);
+    }
+    setRenaming(false);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        {
+          label: "Rename",
+          icon: <PenLine className="h-3.5 w-3.5" />,
+          action: () => {
+            setRenameValue(folder.name);
+            setRenaming(true);
+          },
+        },
+        {
+          label: "New Subfolder",
+          icon: <FolderPlus className="h-3.5 w-3.5" />,
+          action: () => onRequestNewSubfolder?.(folder),
+        },
+        { separator: true },
+        {
+          label: "Delete Folder",
+          icon: <Trash2 className="h-3.5 w-3.5" />,
+          danger: true,
+          action: () => onRequestDelete?.(folder),
+        },
+      ],
+    });
+  };
 
   return (
     <div>
       <button
         onClick={() => {
+          if (renaming) return;
           toggleFolder(folder.id);
           setCurrentFolderId(folder.id);
           onNavigate?.();
         }}
+        onContextMenu={handleContextMenu}
         className={cn(
           "group flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-all",
           "hover:bg-accent/50",
@@ -165,7 +235,30 @@ function FolderItem({
         ) : (
           <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
         )}
-        <span className="flex-1 truncate text-left">{folder.name}</span>
+        {renaming ? (
+          <input
+            ref={renameInputRef}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitRename();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setRenameValue(folder.name);
+                setRenaming(false);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className="flex-1 min-w-0 rounded border border-primary bg-background px-1 py-0.5 text-[13px] text-foreground outline-none"
+            aria-label={`Rename folder ${folder.name}`}
+          />
+        ) : (
+          <span className="flex-1 truncate text-left">{folder.name}</span>
+        )}
         {noteCount > 0 && (
           <span className="text-xs text-muted-foreground tabular-nums">
             {noteCount}
@@ -182,7 +275,14 @@ function FolderItem({
             className="overflow-hidden"
           >
             {subFolders.map((subFolder) => (
-              <FolderItem key={subFolder.id} folder={subFolder} level={level + 1} onNavigate={onNavigate} />
+              <FolderItem
+                key={subFolder.id}
+                folder={subFolder}
+                level={level + 1}
+                onNavigate={onNavigate}
+                onRequestDelete={onRequestDelete}
+                onRequestNewSubfolder={onRequestNewSubfolder}
+              />
             ))}
           </motion.div>
         )}
@@ -255,8 +355,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   const tags = useTagStore((s) => s.tags);
   const tasks = useTaskStore((s) => s.tasks);
+  const deleteFolder = useWorkspaceStore((s) => s.deleteFolder);
+  const updateNote = useNoteStore((s) => s.updateNote);
+  const showToast = useUIStore((s) => s.showToast);
 
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [deleteTarget, setDeleteTarget] = React.useState<FolderType | null>(null);
 
   const activeNotes = notes.filter((n) => !n.isDeleted && !n.isArchived);
   const recentNotes = [...activeNotes]
@@ -298,6 +402,48 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       parentId: null,
       workspaceId: currentWorkspace?.id || "default",
     });
+  };
+
+  /** Collect a folder and all of its descendants (recursively). */
+  const collectFolderTree = (id: string): string[] => {
+    const ids = [id];
+    for (const f of folders) {
+      if (f.parentId === id) {
+        ids.push(...collectFolderTree(f.id));
+      }
+    }
+    return ids;
+  };
+
+  const handleNewSubfolder = (parent: FolderType) => {
+    addFolder({
+      name: "New Folder",
+      parentId: parent.id,
+      workspaceId: parent.workspaceId,
+    });
+    // Expand the parent so the new subfolder is visible.
+    useAppStore.getState().toggleFolder(parent.id);
+    showToast(`Subfolder created in "${parent.name}"`, "success");
+  };
+
+  const handleDeleteFolder = (target: FolderType) => {
+    const ids = collectFolderTree(target.id);
+    const idSet = new Set(ids);
+
+    // Move notes living in the deleted folders back to the root level
+    // (unfiled) instead of silently deleting user content.
+    notes
+      .filter((n) => n.folderId && idSet.has(n.folderId) && !n.isDeleted)
+      .forEach((n) => updateNote(n.id, { folderId: null }));
+
+    ids.forEach((id) => deleteFolder(id));
+
+    if (useAppStore.getState().currentFolderId && idSet.has(useAppStore.getState().currentFolderId!)) {
+      useAppStore.getState().setCurrentFolderId(null);
+    }
+
+    setDeleteTarget(null);
+    showToast(`Folder "${target.name}" deleted`, "success");
   };
 
   const navigate = (view: string) => {
@@ -416,7 +562,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               defaultOpen
             >
               {rootFolders.map((folder) => (
-                <FolderItem key={folder.id} folder={folder} onNavigate={onNavigate} />
+                <FolderItem
+                  key={folder.id}
+                  folder={folder}
+                  onNavigate={onNavigate}
+                  onRequestDelete={setDeleteTarget}
+                  onRequestNewSubfolder={handleNewSubfolder}
+                />
               ))}
               <button
                 onClick={handleNewFolder}
@@ -533,6 +685,35 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </Tooltip>
         </div>
       )}
+
+      {/* Delete folder confirmation */}
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Delete Folder?
+            </DialogTitle>
+            <DialogDescription>
+              Delete <span className="font-medium text-foreground">&quot;{deleteTarget?.name}&quot;</span> and
+              all of its subfolders? Notes inside will be moved to the root level — nothing is lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => deleteTarget && handleDeleteFolder(deleteTarget)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }
