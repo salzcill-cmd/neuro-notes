@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useNoteStore } from "./useNoteStore";
-import { generateId } from "@/lib/utils";
+import { generateId, sanitizeDateString } from "@/lib/utils";
 
 export interface NoteSnapshot {
   id: string;
@@ -42,7 +42,7 @@ const loadHistory = (): Record<string, NoteSnapshot[]> => {
           content: s.content ?? "",
           plainText: s.plainText ?? "",
           wordCount: s.wordCount ?? 0,
-          createdAt: s.createdAt ?? new Date().toISOString(),
+          createdAt: sanitizeDateString(s.createdAt) ?? new Date().toISOString(),
         }));
       }
       return result;

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Note } from "@/types";
-import { generateId, extractWikiLinks } from "@/lib/utils";
+import { generateId, extractWikiLinks, sanitizeDateString } from "@/lib/utils";
 
 interface NoteState {
   notes: Note[];
@@ -66,8 +66,8 @@ const loadNotes = (): Note[] => {
         tags: Array.isArray(n.tags) ? n.tags : [],
         backlinks: Array.isArray(n.backlinks) ? n.backlinks : [],
         links: Array.isArray(n.links) ? n.links : [],
-        createdAt: n.createdAt ?? new Date().toISOString(),
-        updatedAt: n.updatedAt ?? new Date().toISOString(),
+        createdAt: sanitizeDateString(n.createdAt) ?? new Date().toISOString(),
+        updatedAt: sanitizeDateString(n.updatedAt) ?? new Date().toISOString(),
         deletedAt: n.deletedAt,
       }));
     }

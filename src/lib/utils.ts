@@ -15,7 +15,13 @@ export function generateId(): string {
   return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function isValidDate(date: Date | string): boolean {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d instanceof Date && !Number.isNaN(d.getTime());
+}
+
 export function formatDate(date: Date | string): string {
+  if (!isValidDate(date)) return "";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -24,6 +30,7 @@ export function formatDate(date: Date | string): string {
 }
 
 export function formatDateTime(date: Date | string): string {
+  if (!isValidDate(date)) return "";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -31,6 +38,18 @@ export function formatDateTime(date: Date | string): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(date));
+}
+
+/**
+ * Guard against invalid date strings in stored data (old exports, manual
+ * edits, etc.). Returns a valid ISO string or null when the input is not
+ * parseable — the caller decides the fallback.
+ */
+export function sanitizeDateString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 export function truncate(str: string, length: number): string {

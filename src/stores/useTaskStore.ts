@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Task, TaskStatus, Priority } from "@/types";
-import { generateId } from "@/lib/utils";
+import { generateId, sanitizeDateString } from "@/lib/utils";
 
 interface TaskState {
   tasks: Task[];
@@ -37,14 +37,14 @@ const loadTasks = (): Task[] => {
         priority: t.priority ?? "none",
         noteId: t.noteId,
         workspaceId: t.workspaceId ?? "default",
-        dueDate: t.dueDate,
+        dueDate: sanitizeDateString(t.dueDate) ?? undefined,
         reminder: t.reminder,
         isRecurring: !!t.isRecurring,
         recurringPattern: t.recurringPattern,
         tags: Array.isArray(t.tags) ? t.tags : [],
         subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
-        createdAt: t.createdAt ?? new Date().toISOString(),
-        updatedAt: t.updatedAt ?? new Date().toISOString(),
+        createdAt: sanitizeDateString(t.createdAt) ?? new Date().toISOString(),
+        updatedAt: sanitizeDateString(t.updatedAt) ?? new Date().toISOString(),
       }));
     }
   } catch {}

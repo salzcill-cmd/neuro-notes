@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Tag } from "@/types";
+import { sanitizeDateString } from "@/lib/utils";
 import { generateId } from "@/lib/utils";
 import { useNoteStore, useTaskStore } from "./index";
 
@@ -32,7 +33,7 @@ const loadTags = (): Tag[] => {
         color: t.color,
         parentId: t.parentId ?? null,
         workspaceId: t.workspaceId ?? "default",
-        createdAt: t.createdAt ?? new Date().toISOString(),
+        createdAt: sanitizeDateString(t.createdAt) ?? new Date().toISOString(),
       }));
     }
   } catch {}

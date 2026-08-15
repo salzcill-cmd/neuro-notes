@@ -55,7 +55,10 @@ export function CalendarView() {
   const notesByDate = React.useMemo(() => {
     const map: Record<string, Note[]> = {};
     activeNotes.forEach((note) => {
-      const dateStr = new Date(note.createdAt).toISOString().split("T")[0];
+      const created = new Date(note.createdAt);
+      // Never crash on stale/corrupt dates — treat them as untracked.
+      if (Number.isNaN(created.getTime())) return;
+      const dateStr = created.toISOString().split("T")[0];
       if (!map[dateStr]) map[dateStr] = [];
       map[dateStr].push(note);
     });

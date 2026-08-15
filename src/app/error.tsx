@@ -41,6 +41,11 @@ export default function GlobalError({
         NeuroNotes hit an unexpected error. Your notes are safe — try reloading,
         or clear the app data if the problem persists.
       </p>
+      {error?.message && (
+        <p className="max-w-md break-words rounded-md border border-border bg-muted/40 px-3 py-2 text-center font-mono text-[11px] text-muted-foreground">
+          {error.message}
+        </p>
+      )}
       <div className="flex gap-2">
         <button
           onClick={() => reset()}

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Workspace, Folder } from "@/types";
-import { generateId } from "@/lib/utils";
+import { generateId, sanitizeDateString } from "@/lib/utils";
 
 interface WorkspaceState {
   workspaces: Workspace[];
@@ -35,8 +35,8 @@ const loadWorkspaces = (): Workspace[] => {
         description: w.description,
         icon: w.icon,
         color: w.color,
-        createdAt: w.createdAt ?? new Date().toISOString(),
-        updatedAt: w.updatedAt ?? new Date().toISOString(),
+        createdAt: sanitizeDateString(w.createdAt) ?? new Date().toISOString(),
+        updatedAt: sanitizeDateString(w.updatedAt) ?? new Date().toISOString(),
       }));
     }
   } catch {}
@@ -58,8 +58,8 @@ const loadFolders = (): Folder[] => {
         workspaceId: f.workspaceId ?? "default",
         icon: f.icon,
         color: f.color,
-        createdAt: f.createdAt ?? new Date().toISOString(),
-        updatedAt: f.updatedAt ?? new Date().toISOString(),
+        createdAt: sanitizeDateString(f.createdAt) ?? new Date().toISOString(),
+        updatedAt: sanitizeDateString(f.updatedAt) ?? new Date().toISOString(),
       }));
     }
   } catch {}
